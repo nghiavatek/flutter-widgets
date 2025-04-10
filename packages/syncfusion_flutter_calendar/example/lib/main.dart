@@ -26,31 +26,93 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
+  final DateTime _selectedDate = DateTime.now();
+
   @override
   Widget build(BuildContext context) {
+
     return Scaffold(
-        body: SfCalendar(
-      view: CalendarView.month,
-      dataSource: MeetingDataSource(_getDataSource()),
-      // by default the month appointment display mode set as Indicator, we can
-      // change the display mode as appointment using the appointment display
-      // mode property
-      monthViewSettings: const MonthViewSettings(
-          appointmentDisplayMode: MonthAppointmentDisplayMode.appointment),
-    ));
+        body: Padding(
+          padding: const EdgeInsets.only(top: 40.0, bottom: 40),
+          child: SfCalendar(
+            view: CalendarView.timelineDay, // Keep timelineDay for proper separation
+            showCurrentTimeIndicator: true,
+            showDatePickerButton: true,
+            timeSlotViewSettings: const TimeSlotViewSettings(
+              startHour: 1,
+              endHour: 20,
+              timeInterval: Duration(minutes: 30),
+              timeIntervalHeight: 60,
+            ),
+            minDate: _selectedDate.subtract(const Duration(days: 180)),
+            maxDate: _selectedDate.add(const Duration(days: 180)),
+            dataSource: _getCalendarDataSource(),
+            initialDisplayDate: _selectedDate,
+            resourceViewSettings: const ResourceViewSettings(
+              showAvatar: false,
+              visibleResourceCount: 5,
+              size: 100,
+              displayNameTextStyle: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+        ),
+    );
   }
 
-  List<Meeting> _getDataSource() {
-    final List<Meeting> meetings = <Meeting>[];
-    final DateTime today = DateTime.now();
-    final DateTime startTime = DateTime(today.year, today.month, today.day, 9);
-    final DateTime endTime = startTime.add(const Duration(hours: 2));
-    meetings.add(Meeting(
-        'Conference', startTime, endTime, const Color(0xFF0F8644), false));
-    return meetings;
+
+  _AppointmentDataSource _getCalendarDataSource() {
+    final List<Appointment> appointments = <Appointment>[];
+    appointments.add(
+      Appointment(
+        startTime: DateTime(_selectedDate.year, _selectedDate.month, _selectedDate.day, 2, 0),
+        endTime: DateTime(_selectedDate.year, _selectedDate.month, _selectedDate.day, 3, 0),
+        subject: 'Mohammed',
+        color: Colors.blue,
+        resourceIds: ['Service 1'],
+      ),
+    );
+    appointments.add(
+      Appointment(
+        startTime: DateTime(_selectedDate.year, _selectedDate.month, _selectedDate.day, 3, 0),
+        endTime: DateTime(_selectedDate.year, _selectedDate.month, _selectedDate.day, 4, 0),
+        subject: 'Mohammed',
+        color: Colors.green,
+        resourceIds: ['Service 2'],
+      ),
+    );
+    appointments.add(
+      Appointment(
+        startTime: DateTime(_selectedDate.year, _selectedDate.month, _selectedDate.day, 1, 0),
+        endTime: DateTime(_selectedDate.year, _selectedDate.month, _selectedDate.day, 2, 0),
+        subject: 'Mohammed',
+        color: Colors.red,
+        resourceIds: ['Service 3'],
+      ),
+    );
+
+    final List<CalendarResource> resources = _getResources();
+    return _AppointmentDataSource(appointments, resources);
+  }
+
+  List<CalendarResource> _getResources() {
+    return [
+      CalendarResource(id: 'Service 1', displayName: 'Service 1'),
+      CalendarResource(id: 'Service 2', displayName: 'Service 2'),
+      CalendarResource(id: 'Service 3', displayName: 'Service 3'),
+    ];
   }
 }
 
+
+class _AppointmentDataSource extends CalendarDataSource {
+  _AppointmentDataSource(List<Appointment> appointments, List<CalendarResource> resources) {
+    this.appointments = appointments;
+    this.resources = resources;
+  }
+}
 /// An object to set the appointment collection data source to calendar, which
 /// used to map the custom appointment data to the calendar appointment, and
 /// allows to add, remove or reset the appointment collection.

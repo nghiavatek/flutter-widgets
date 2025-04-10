@@ -8353,100 +8353,61 @@ class _SfCalendarState extends State<SfCalendar>
   Widget _addResourcePanel(bool isResourceEnabled, double resourceViewSize,
       double height, bool isRTL) {
     if (!isResourceEnabled) {
-      return Positioned(
-        left: 0,
-        right: 0,
-        top: 0,
-        bottom: 0,
-        child: Container(),
-      );
+      return const SizedBox.shrink();
     }
 
-    final double viewHeaderHeight =
-        CalendarViewHelper.getViewHeaderHeight(widget.viewHeaderHeight, _view);
-    final double timeLabelSize = CalendarViewHelper.getTimeLabelWidth(
-        widget.timeSlotViewSettings.timeRulerSize, _view);
-    final double top = viewHeaderHeight + timeLabelSize;
     final double resourceItemHeight = CalendarViewHelper.getResourceItemHeight(
         resourceViewSize,
-        height - top,
+        height,
         widget.resourceViewSettings,
         _resourceCollection!.length);
-    final double panelHeight = resourceItemHeight * _resourceCollection!.length;
-
-    final Widget verticalDivider = VerticalDivider(
-      width: 0.5,
-      thickness: 0.5,
-      color: widget.cellBorderColor ?? _calendarTheme.cellBorderColor,
-    );
 
     return Positioned(
-        left: isRTL ? _minWidth - resourceViewSize : 0,
-        width: resourceViewSize,
-        top: 0,
-        bottom: 0,
-        child: Stack(children: <Widget>[
-          Positioned(
-            left: _isRTL ? 0.5 : resourceViewSize - 0.5,
-            width: 0.5,
-            top: _controller.view == CalendarView.timelineMonth
-                ? widget.headerHeight
-                : widget.headerHeight + viewHeaderHeight,
-            height: _controller.view == CalendarView.timelineMonth
-                ? viewHeaderHeight
-                : timeLabelSize,
-            child: verticalDivider,
+      left: 0,
+      right: 0,
+      top: 0, // Position will be adjusted by the parent (_addChildren)
+      height: resourceViewSize, // Fixed height for a single row of resources
+      child: MouseRegion(
+        onEnter: (PointerEnterEvent event) {
+          _pointerEnterEvent(event, false, isRTL, null, widget.headerHeight, 0, isResourceEnabled);
+        },
+        onExit: _pointerExitEvent,
+        onHover: (PointerHoverEvent event) {
+          _pointerHoverEvent(event, false, isRTL, null, widget.headerHeight, 0, isResourceEnabled);
+        },
+        child: GestureDetector(
+          child: ListView.builder(
+            scrollDirection: Axis.horizontal,
+            controller: _resourcePanelScrollController,
+            physics: const ClampingScrollPhysics(),
+            itemCount: _resourceCollection!.length,
+            itemBuilder: (BuildContext context, int index) {
+              final int resourceIndex = isRTL ? _resourceCollection!.length - 1 - index : index;
+              return Container(
+                width: resourceViewSize, // Fixed width for each resource item
+                child: SingleResourceViewWidget(
+                  resource: _resourceCollection![resourceIndex],
+                  resourceViewSettings: widget.resourceViewSettings,
+                  height: resourceItemHeight,
+                  cellBorderColor: widget.cellBorderColor,
+                  calendarTheme: _calendarTheme,
+                  themeData: _themeData,
+                  isRTL: isRTL,
+                  textScaleFactor: _textScaleFactor,
+                  hoverPosition: _resourceHoverNotifier.value,
+                ),
+              );
+            },
           ),
-          Positioned(
-              left: 0,
-              width: resourceViewSize,
-              top: widget.headerHeight + top,
-              bottom: 0,
-              child: MouseRegion(
-                  onEnter: (PointerEnterEvent event) {
-                    _pointerEnterEvent(event, false, isRTL, null,
-                        top + widget.headerHeight, 0, isResourceEnabled);
-                  },
-                  onExit: _pointerExitEvent,
-                  onHover: (PointerHoverEvent event) {
-                    _pointerHoverEvent(event, false, isRTL, null,
-                        top + widget.headerHeight, 0, isResourceEnabled);
-                  },
-                  child: GestureDetector(
-                    child: ScrollConfiguration(
-                      behavior: ScrollConfiguration.of(context)
-                          .copyWith(scrollbars: false),
-                      child: ListView(
-                          padding: EdgeInsets.zero,
-                          physics: const ClampingScrollPhysics(),
-                          controller: _resourcePanelScrollController,
-                          children: <Widget>[
-                            ResourceViewWidget(
-                                _resourceCollection,
-                                widget.resourceViewSettings,
-                                resourceItemHeight,
-                                widget.cellBorderColor,
-                                _calendarTheme,
-                                _themeData,
-                                _resourceImageNotifier,
-                                isRTL,
-                                _textScaleFactor,
-                                _resourceHoverNotifier.value,
-                                _imagePainterCollection,
-                                resourceViewSize,
-                                panelHeight,
-                                widget.resourceViewHeaderBuilder),
-                          ]),
-                    ),
-                    onTapUp: (TapUpDetails details) {
-                      _handleOnTapForResourcePanel(details, resourceItemHeight);
-                    },
-                    onLongPressStart: (LongPressStartDetails details) {
-                      _handleOnLongPressForResourcePanel(
-                          details, resourceItemHeight);
-                    },
-                  )))
-        ]));
+          onTapUp: (TapUpDetails details) {
+            _handleOnTapForResourcePanel(details, resourceItemHeight);
+          },
+          onLongPressStart: (LongPressStartDetails details) {
+            _handleOnLongPressForResourcePanel(details, resourceItemHeight);
+          },
+        ),
+      ),
+    );
   }
 
   /// Handles and raises the [widget.onLongPress] callback, when the resource
@@ -8513,6 +8474,101 @@ class _SfCalendarState extends State<SfCalendar>
   }
 
   /// Adds the custom scroll view which used to produce the infinity scroll.
+  // Widget _addCustomScrollView(
+  //     double top,
+  //     double resourceViewSize,
+  //     bool isRTL,
+  //     bool isResourceEnabled,
+  //     double width,
+  //     double height,
+  //     double agendaHeight) {
+  //   return Positioned(
+  //     top: top,
+  //     left: isResourceEnabled && !isRTL ? resourceViewSize : 0,
+  //     right: isResourceEnabled && isRTL ? resourceViewSize : 0,
+  //     height: height - agendaHeight,
+  //     child: _OpacityWidget(
+  //         opacity: _opacity,
+  //         child: CustomCalendarScrollView(
+  //           widget,
+  //           _view,
+  //           width - resourceViewSize,
+  //           height - agendaHeight,
+  //           _agendaSelectedDate,
+  //           isRTL,
+  //           _locale,
+  //           _calendarTheme,
+  //           _themeData,
+  //           _timeZoneLoaded ? widget.specialRegions : null,
+  //           _blackoutDates,
+  //           _controller,
+  //           _removeDatePicker,
+  //           _resourcePanelScrollController,
+  //           _resourceCollection,
+  //           _textScaleFactor,
+  //           _isMobilePlatform,
+  //           _fadeInController,
+  //           widget.minDate,
+  //           widget.maxDate,
+  //           _localizations,
+  //           _timelineMonthWeekNumberNotifier,
+  //           _updateCalendarState,
+  //           _getCalendarStateDetails,
+  //           key: _customScrollViewKey,
+  //         )),
+  //   );
+  // }
+
+  List<Widget> _getTimelineAppointments(int resourceIndex) {
+    final List<Widget> appointmentWidgets = [];
+    final bool isResourceEnabled = CalendarViewHelper.isResourceEnabled(
+        widget.dataSource, _view);
+
+    // Get appointments for the current resource
+    final List<Appointment> appointments = widget.dataSource?.appointments
+        ?.where((app) => !isResourceEnabled || (app as Appointment).resourceIds!.contains(_resourceCollection![resourceIndex].id))
+        .cast<Appointment>()
+        .toList() ??
+        [];
+
+    for (final Appointment appointment in appointments) {
+      final DateTime startTime = appointment.startTime;
+      final DateTime endTime = appointment.endTime;
+
+      // Calculate the position and height of the appointment
+      final double startHour = widget.timeSlotViewSettings.startHour;
+      final Duration timeInterval = widget.timeSlotViewSettings.timeInterval;
+      final double timeIntervalHeight = widget.timeSlotViewSettings.timeIntervalHeight;
+
+      final int startSlot = ((startTime.hour + startTime.minute / 60 - startHour) * 60 / timeInterval.inMinutes).round();
+      final int endSlot = ((endTime.hour + endTime.minute / 60 - startHour) * 60 / timeInterval.inMinutes).round();
+
+      final double top = startSlot * timeIntervalHeight;
+      final double height = (endSlot - startSlot) * timeIntervalHeight;
+
+      appointmentWidgets.add(
+        Positioned(
+          top: top,
+          left: 0,
+          right: 0,
+          height: height,
+          child: Container(
+            margin: const EdgeInsets.all(2),
+            color: appointment.color,
+            child: Center(
+              child: Text(
+                appointment.subject,
+                style: const TextStyle(color: Colors.white, fontSize: 12),
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
+    return appointmentWidgets;
+  }
+
   Widget _addCustomScrollView(
       double top,
       double resourceViewSize,
@@ -8521,18 +8577,19 @@ class _SfCalendarState extends State<SfCalendar>
       double width,
       double height,
       double agendaHeight) {
-    return Positioned(
-      top: top,
-      left: isResourceEnabled && !isRTL ? resourceViewSize : 0,
-      right: isResourceEnabled && isRTL ? resourceViewSize : 0,
-      height: height - agendaHeight,
-      child: _OpacityWidget(
+    if (_view != CalendarView.timelineDay) {
+      return Positioned(
+        top: top,
+        left: isResourceEnabled && !isRTL ? resourceViewSize : 0,
+        right: isResourceEnabled && isRTL ? resourceViewSize : 0,
+        height: height,
+        child: _OpacityWidget(
           opacity: _opacity,
           child: CustomCalendarScrollView(
             widget,
             _view,
             width - resourceViewSize,
-            height - agendaHeight,
+            height,
             _agendaSelectedDate,
             isRTL,
             _locale,
@@ -8554,84 +8611,252 @@ class _SfCalendarState extends State<SfCalendar>
             _updateCalendarState,
             _getCalendarStateDetails,
             key: _customScrollViewKey,
-          )),
+          ),
+        ),
+      );
+    }
+
+    // Custom implementation for timelineDay view
+    final double timeLabelSize = CalendarViewHelper.getTimeLabelWidth(
+        widget.timeSlotViewSettings.timeRulerSize, _view);
+
+    // Calculate the number of time slots (vertical lines)
+    final int horizontalLinesCount = ((widget.timeSlotViewSettings.endHour -
+        widget.timeSlotViewSettings.startHour) *
+        60 /
+        widget.timeSlotViewSettings.timeInterval.inMinutes)
+        .round();
+
+    // Calculate the total height of the timeline based on time slots
+    final double timeIntervalHeight = widget.timeSlotViewSettings.timeIntervalHeight;
+    final double totalTimeSlotsHeight = timeIntervalHeight * horizontalLinesCount;
+
+    // List of resources (default to a single resource if resources are not enabled)
+    final List<CalendarResource> resources = isResourceEnabled
+        ? _resourceCollection!
+        : [CalendarResource(id: 'default', displayName: '')];
+
+    // Calculate the width of each resource column (excluding the time label width)
+    final double resourceColumnWidth = (width - timeLabelSize) / resources.length;
+
+    // Calculate the position of the current time indicator
+    final DateTime now = DateTime.now();
+    final double startHour = widget.timeSlotViewSettings.startHour;
+    final double currentHour = now.hour + now.minute / 60;
+    final double currentPosition = (currentHour - startHour) * 60 / widget.timeSlotViewSettings.timeInterval.inMinutes * timeIntervalHeight;
+
+    return Positioned(
+      top: top,
+      left: 0,
+      right: 0,
+      height: height,
+      child: SingleChildScrollView(
+        scrollDirection: Axis.vertical,
+        controller: _resourcePanelScrollController,
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Time labels column (on the left)
+            Container(
+              width: timeLabelSize,
+              child: Column(
+                children: List.generate(horizontalLinesCount, (index) {
+                  final DateTime baseDate = _currentViewVisibleDates[0];
+                  final DateTime startDate = DateTime(
+                      baseDate.year,
+                      baseDate.month,
+                      baseDate.day,
+                      widget.timeSlotViewSettings.startHour.toInt());
+                  final DateTime time = startDate.add(Duration(
+                      minutes: index *
+                          CalendarViewHelper.getTimeInterval(
+                              widget.timeSlotViewSettings)));
+                  return Container(
+                    height: timeIntervalHeight,
+                    alignment: Alignment.center,
+                    child: Text(
+                      '${time.hour}:${time.minute.toString().padLeft(2, '0')}',
+                      style: const TextStyle(fontSize: 12),
+                    ),
+                  );
+                }),
+              ),
+            ),
+            // Timeline view
+            Expanded(
+              child: Stack(
+                children: [
+                  Row(
+                    children: resources.asMap().entries.map((entry) {
+                      final int index = isRTL ? resources.length - 1 - entry.key : entry.key;
+                      return Container(
+                        width: resourceColumnWidth,
+                        height: totalTimeSlotsHeight,
+                        decoration: BoxDecoration(
+                          border: Border.all(color: Colors.grey.shade300),
+                        ),
+                        child: Stack(
+                          children: [
+                            // Background grid for time slots
+                            Column(
+                              children: List.generate(horizontalLinesCount, (slotIndex) {
+                                return Container(
+                                  height: timeIntervalHeight,
+                                  decoration: BoxDecoration(
+                                    border: Border(
+                                      bottom: BorderSide(color: Colors.grey.shade200),
+                                    ),
+                                  ),
+                                );
+                              }),
+                            ),
+                            // Appointments
+                            ..._getTimelineAppointments(index),
+                          ],
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                  // Current time indicator
+                  if (widget.showCurrentTimeIndicator &&
+                      currentHour >= startHour &&
+                      currentHour <= widget.timeSlotViewSettings.endHour)
+                    Positioned(
+                      top: currentPosition,
+                      left: timeLabelSize, // Offset by the time label width
+                      right: 0,
+                      child: Container(
+                        height: 2,
+                        color: Colors.red,
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
+  //Render Layout sfCalendar widget
   Widget _addChildren(
       double agendaHeight, double height, double width, bool isRTL) {
     final bool isResourceEnabled =
-        CalendarViewHelper.isResourceEnabled(widget.dataSource, _view);
+    CalendarViewHelper.isResourceEnabled(widget.dataSource, _view);
     final double resourceViewSize =
-        isResourceEnabled ? widget.resourceViewSettings.size : 0;
+    isResourceEnabled ? widget.resourceViewSettings.size : 0;
     final DateTime currentViewDate = _currentViewVisibleDates[
-        (_currentViewVisibleDates.length / 2).truncate()];
+    (_currentViewVisibleDates.length / 2).truncate()];
+
+    // Calculate the height of the resource panel
+    final double resourcePanelHeight = isResourceEnabled ? resourceViewSize : 0;
+
+    // Adjust the height of the timeline view
+    final double timelineViewHeight = height - widget.headerHeight - resourcePanelHeight - agendaHeight;
 
     final List<Widget> children = <Widget>[
+      // Header (unchanged)
       Positioned(
         top: 0,
         right: 0,
         left: 0,
         height: widget.headerHeight,
         child: Container(
-            color: widget.headerStyle.backgroundColor ??
-                _calendarTheme.headerBackgroundColor,
-            child: _CalendarHeaderView(
-                _currentViewVisibleDates,
-                widget.headerStyle,
-                currentViewDate,
-                _view,
-                widget.monthViewSettings.numberOfWeeksInView,
-                _calendarTheme,
-                isRTL,
-                _locale,
-                widget.showNavigationArrow,
-                _controller,
-                widget.maxDate,
-                widget.minDate,
-                width,
-                widget.headerHeight,
-                widget.timeSlotViewSettings.nonWorkingDays,
-                widget.monthViewSettings.navigationDirection,
-                widget.showDatePickerButton,
-                widget.showTodayButton,
-                _showHeader,
-                widget.allowedViews,
-                widget.allowViewNavigation,
-                _localizations,
-                _removeDatePicker,
-                _headerUpdateNotifier,
-                _viewChangeNotifier,
-                _handleOnTapForHeader,
-                _handleOnLongPressForHeader,
-                widget.todayHighlightColor,
-                _textScaleFactor,
-                _isMobilePlatform,
-                widget.headerDateFormat,
-                !_isNeedLoadMore,
-                widget.todayTextStyle,
-                widget.showWeekNumber,
-                widget.weekNumberStyle,
-                _timelineMonthWeekNumberNotifier,
-                widget.cellBorderColor,
-                widget.timeSlotViewSettings.numberOfDaysInView)),
+          color: widget.headerStyle.backgroundColor ??
+              _calendarTheme.headerBackgroundColor,
+          child: _CalendarHeaderView(
+              _currentViewVisibleDates,
+              widget.headerStyle,
+              currentViewDate,
+              _view,
+              widget.monthViewSettings.numberOfWeeksInView,
+              _calendarTheme,
+              isRTL,
+              _locale,
+              widget.showNavigationArrow,
+              _controller,
+              widget.maxDate,
+              widget.minDate,
+              width,
+              widget.headerHeight,
+              widget.timeSlotViewSettings.nonWorkingDays,
+              widget.monthViewSettings.navigationDirection,
+              widget.showDatePickerButton,
+              widget.showTodayButton,
+              _showHeader,
+              widget.allowedViews,
+              widget.allowViewNavigation,
+              _localizations,
+              _removeDatePicker,
+              _headerUpdateNotifier,
+              _viewChangeNotifier,
+              _handleOnTapForHeader,
+              _handleOnLongPressForHeader,
+              widget.todayHighlightColor,
+              _textScaleFactor,
+              _isMobilePlatform,
+              widget.headerDateFormat,
+              !_isNeedLoadMore,
+              widget.todayTextStyle,
+              widget.showWeekNumber,
+              widget.weekNumberStyle,
+              _timelineMonthWeekNumberNotifier,
+              widget.cellBorderColor,
+              widget.timeSlotViewSettings.numberOfDaysInView),
+        ),
       ),
-      _addResourcePanel(isResourceEnabled, resourceViewSize, height, isRTL),
-      _addCustomScrollView(widget.headerHeight, resourceViewSize, isRTL,
-          isResourceEnabled, width, height, agendaHeight),
-      _addAgendaView(agendaHeight, widget.headerHeight + height - agendaHeight,
-          width, isRTL),
+      // Resource panel (under the header)
+      Positioned(
+        top: widget.headerHeight,
+        left: 0,
+        right: 0,
+        height: resourcePanelHeight,
+        child: _addResourcePanel(
+            isResourceEnabled, resourceViewSize, height, isRTL),
+      ),
+      // Timeline view (under the resource panel)
+      Positioned(
+        top: widget.headerHeight + resourcePanelHeight,
+        left: 0,
+        right: 0,
+        height: timelineViewHeight,
+        child: _OpacityWidget(
+          opacity: _opacity,
+          child: _addCustomScrollView(
+            widget.headerHeight + resourcePanelHeight,
+            0, // No resource panel on the side
+            isRTL,
+            isResourceEnabled,
+            width,
+            timelineViewHeight,
+            agendaHeight,
+          ),
+        ),
+      ),
+      // Agenda view (adjusted position)
+      _addAgendaView(
+          agendaHeight,
+          widget.headerHeight + height - agendaHeight,
+          width,
+          isRTL),
+      // Date picker (adjusted position)
       _addDatePicker(widget.headerHeight, isRTL),
+      // Popup (unchanged)
       _getCalendarViewPopup(),
     ];
+
     if (_isNeedLoadMore && widget.loadMoreWidgetBuilder != null) {
       children.add(Container(
-          color: Colors.transparent,
-          child: widget.loadMoreWidgetBuilder!(context, () async {
-            await loadMoreAppointments(_currentViewVisibleDates[0],
-                _currentViewVisibleDates[_currentViewVisibleDates.length - 1]);
-          })));
+        color: Colors.transparent,
+        child: widget.loadMoreWidgetBuilder!(context, () async {
+          await loadMoreAppointments(
+              _currentViewVisibleDates[0],
+              _currentViewVisibleDates[_currentViewVisibleDates.length - 1]);
+        }),
+      ));
     }
+
     return Stack(children: children);
   }
 
@@ -11650,4 +11875,59 @@ double _getAgendaViewDayLabelWidth(
   }
 
   return scheduleViewSettings.dayHeaderSettings.width;
+}
+
+class SingleResourceViewWidget extends StatelessWidget {
+  const SingleResourceViewWidget({
+    Key? key,
+    required this.resource,
+    required this.resourceViewSettings,
+    required this.height,
+    required this.cellBorderColor,
+    required this.calendarTheme,
+    required this.themeData,
+    required this.isRTL,
+    required this.textScaleFactor,
+    required this.hoverPosition,
+  }) : super(key: key);
+
+  final CalendarResource resource;
+  final ResourceViewSettings resourceViewSettings;
+  final double height;
+  final Color? cellBorderColor;
+  final SfCalendarThemeData calendarTheme;
+  final ThemeData themeData;
+  final bool isRTL;
+  final double textScaleFactor;
+  final Offset? hoverPosition;
+
+  @override
+  Widget build(BuildContext context) {
+
+
+    return Container(
+      height: height,
+      alignment: Alignment.center,
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          if (resourceViewSettings.showAvatar)
+            CircleAvatar(
+              radius: height * 0.3,
+              backgroundColor: Colors.blue,
+              child: Text(
+                resource.displayName[0],
+                style: const TextStyle(color: Colors.white),
+              ),
+            ),
+          SizedBox(height: height * 0.1),
+          Text(
+            resource.displayName,
+            style: resourceViewSettings.displayNameTextStyle,
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
+    );
+  }
 }
