@@ -8134,7 +8134,7 @@ class _SfCalendarState extends State<SfCalendar>
     if (widget.allowedViews == null ||
         widget.allowedViews!.isEmpty ||
         !_viewChangeNotifier.value) {
-      return Container();
+      return const SizedBox(width: 0, height: 0);
     }
 
     const double calendarViewTextHeight = 40;
@@ -8843,7 +8843,7 @@ class _SfCalendarState extends State<SfCalendar>
         top: widget.headerHeight,
         left: 0,
         right: 0,
-        height: height - widget.headerHeight - agendaHeight,
+        height: height - agendaHeight,
         child: _OpacityWidget(
           opacity: _opacity,
           child: _addCombinedResourceAndTimelineView(
@@ -8858,12 +8858,6 @@ class _SfCalendarState extends State<SfCalendar>
         ),
       ),
 
-      // Agenda view (adjusted position)
-      _addAgendaView(
-          agendaHeight,
-          widget.headerHeight + height - agendaHeight,
-          width,
-          isRTL),
       // Date picker (adjusted position)
       _addDatePicker(widget.headerHeight, isRTL),
       // Popup (unchanged)
@@ -9340,11 +9334,7 @@ class _SfCalendarState extends State<SfCalendar>
       double height, double startPosition, double width, bool isRTL) {
     if (_view != CalendarView.month || !widget.monthViewSettings.showAgenda) {
       return Positioned(
-        left: 0,
-        right: 0,
-        top: 0,
-        bottom: 0,
-        child: Container(),
+        child: Container()
       );
     }
 

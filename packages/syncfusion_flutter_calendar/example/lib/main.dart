@@ -32,8 +32,7 @@ class _MyHomePageState extends State<MyHomePage> {
   Widget build(BuildContext context) {
 
     return Scaffold(
-        body: Padding(
-          padding: const EdgeInsets.only(top: 40.0, bottom: 40),
+        body: SafeArea(
           child: SfCalendar(
             view: CalendarView.timelineDay,
             showDatePickerButton: true,
