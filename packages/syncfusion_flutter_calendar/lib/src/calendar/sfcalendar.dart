@@ -8,6 +8,7 @@ import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:intl/intl.dart' show DateFormat;
+import 'package:linked_scroll_controller/linked_scroll_controller.dart';
 import 'package:syncfusion_flutter_core/core.dart';
 import 'package:syncfusion_flutter_core/localizations.dart';
 import 'package:syncfusion_flutter_core/theme.dart';
@@ -2752,9 +2753,15 @@ class _SfCalendarState extends State<SfCalendar>
   /// This value maintain the time slot view scrolling when calendar view
   /// changed and view navigation(forward and backward).
   bool _canScrollTimeSlotView = true;
+  late LinkedScrollControllerGroup _horizontalScrollGroup;
+  late ScrollController _headerScrollController;
+  late ScrollController _contentScrollController;
 
   @override
   void initState() {
+    _horizontalScrollGroup = LinkedScrollControllerGroup();
+    _headerScrollController = _horizontalScrollGroup.addAndGet();
+    _contentScrollController = _horizontalScrollGroup.addAndGet();
     _textScaleFactor = 1;
     _timeZoneLoaded = false;
     timeZoneLoaded = _timeZoneLoaded;
@@ -3797,6 +3804,8 @@ class _SfCalendarState extends State<SfCalendar>
 
   @override
   void dispose() {
+    _headerScrollController.dispose();
+    _contentScrollController.dispose();
     if (_agendaScrollController != null) {
       _agendaScrollController!.removeListener(_handleScheduleViewScrolled);
       _agendaScrollController!.dispose();
@@ -8350,66 +8359,7 @@ class _SfCalendarState extends State<SfCalendar>
 
   /// Adds the resource panel on the left side of the view, if the resource
   /// collection is not null.
-  Widget _addResourcePanel(bool isResourceEnabled, double resourceViewSize,
-      double height, bool isRTL) {
-    if (!isResourceEnabled) {
-      return const SizedBox.shrink();
-    }
 
-    final double resourceItemHeight = CalendarViewHelper.getResourceItemHeight(
-        resourceViewSize,
-        height,
-        widget.resourceViewSettings,
-        _resourceCollection!.length);
-
-    return Positioned(
-      left: 0,
-      right: 0,
-      top: 0, // Position will be adjusted by the parent (_addChildren)
-      height: resourceViewSize, // Fixed height for a single row of resources
-      child: MouseRegion(
-        onEnter: (PointerEnterEvent event) {
-          _pointerEnterEvent(event, false, isRTL, null, widget.headerHeight, 0, isResourceEnabled);
-        },
-        onExit: _pointerExitEvent,
-        onHover: (PointerHoverEvent event) {
-          _pointerHoverEvent(event, false, isRTL, null, widget.headerHeight, 0, isResourceEnabled);
-        },
-        child: Row(
-          children: [
-            const SizedBox(
-              child: Text("Time"),
-            ),
-            Expanded(
-              child: ListView.builder(
-                scrollDirection: Axis.horizontal,
-                controller: _resourcePanelScrollController,
-                physics: const ClampingScrollPhysics(),
-                itemCount: _resourceCollection!.length,
-                itemBuilder: (BuildContext context, int index) {
-                  final int resourceIndex = isRTL ? _resourceCollection!.length - 1 - index : index;
-                  return Container(
-                    width: resourceViewSize, // Fixed width for each resource item
-                    child: SingleResourceViewWidget(
-                      resource: _resourceCollection![resourceIndex],
-                      resourceViewSettings: widget.resourceViewSettings,
-                      height: resourceItemHeight,
-                      cellBorderColor: widget.cellBorderColor,
-                      calendarTheme: _calendarTheme,
-                      themeData: _themeData,
-                      isRTL: isRTL,
-                      textScaleFactor: _textScaleFactor,
-                      hoverPosition: _resourceHoverNotifier.value,
-                    ),
-                  );
-                },
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
 
   /// Handles and raises the [widget.onLongPress] callback, when the resource
   /// panel is long pressed in [SfCalendar].
@@ -8541,8 +8491,9 @@ class _SfCalendarState extends State<SfCalendar>
       final Duration timeInterval = widget.timeSlotViewSettings.timeInterval;
       final double timeIntervalHeight = widget.timeSlotViewSettings.timeIntervalHeight;
 
-      final int startSlot = ((startTime.hour + startTime.minute / 60 - startHour) * 60 / timeInterval.inMinutes).round();
-      final int endSlot = ((endTime.hour + endTime.minute / 60 - startHour) * 60 / timeInterval.inMinutes).round();
+      // Calculate the exact fractional slot position (no rounding)
+      final double startSlot = (startTime.hour + startTime.minute / 60 - startHour) * 60 / timeInterval.inMinutes;
+      final double endSlot = (endTime.hour + endTime.minute / 60 - startHour) * 60 / timeInterval.inMinutes;
 
       final double top = startSlot * timeIntervalHeight;
       final double height = (endSlot - startSlot) * timeIntervalHeight;
@@ -8570,176 +8521,6 @@ class _SfCalendarState extends State<SfCalendar>
     return appointmentWidgets;
   }
 
-  Widget _addCustomScrollView(
-      double top,
-      double resourceViewSize,
-      bool isRTL,
-      bool isResourceEnabled,
-      double width,
-      double height,
-      double agendaHeight) {
-    if (_view != CalendarView.timelineDay) {
-      return Positioned(
-        top: top,
-        left: isResourceEnabled && !isRTL ? resourceViewSize : 0,
-        right: isResourceEnabled && isRTL ? resourceViewSize : 0,
-        height: height,
-        child: _OpacityWidget(
-          opacity: _opacity,
-          child: CustomCalendarScrollView(
-            widget,
-            _view,
-            width - resourceViewSize,
-            height,
-            _agendaSelectedDate,
-            isRTL,
-            _locale,
-            _calendarTheme,
-            _themeData,
-            _timeZoneLoaded ? widget.specialRegions : null,
-            _blackoutDates,
-            _controller,
-            _removeDatePicker,
-            _resourcePanelScrollController,
-            _resourceCollection,
-            _textScaleFactor,
-            _isMobilePlatform,
-            _fadeInController,
-            widget.minDate,
-            widget.maxDate,
-            _localizations,
-            _timelineMonthWeekNumberNotifier,
-            _updateCalendarState,
-            _getCalendarStateDetails,
-            key: _customScrollViewKey,
-          ),
-        ),
-      );
-    }
-
-    // Custom implementation for timelineDay view
-    final double timeLabelSize = CalendarViewHelper.getTimeLabelWidth(
-        widget.timeSlotViewSettings.timeRulerSize, _view);
-
-    // Calculate the number of time slots (vertical lines)
-    final int horizontalLinesCount = ((widget.timeSlotViewSettings.endHour -
-        widget.timeSlotViewSettings.startHour) *
-        60 /
-        widget.timeSlotViewSettings.timeInterval.inMinutes)
-        .round();
-
-    // Calculate the total height of the timeline based on time slots
-    final double timeIntervalHeight = widget.timeSlotViewSettings.timeIntervalHeight;
-    final double totalTimeSlotsHeight = timeIntervalHeight * horizontalLinesCount;
-
-    // List of resources (default to a single resource if resources are not enabled)
-    final List<CalendarResource> resources = isResourceEnabled
-        ? _resourceCollection!
-        : [CalendarResource(id: 'default', displayName: '')];
-
-    // Calculate the width of each resource column (excluding the time label width)
-    final double resourceColumnWidth = (width - timeLabelSize) / resources.length;
-
-    // Calculate the position of the current time indicator
-    final DateTime now = DateTime.now();
-    final double startHour = widget.timeSlotViewSettings.startHour;
-    final double currentHour = now.hour + now.minute / 60;
-    final double currentPosition = (currentHour - startHour) * 60 / widget.timeSlotViewSettings.timeInterval.inMinutes * timeIntervalHeight;
-
-    return Positioned(
-      top: top,
-      left: 0,
-      right: 0,
-      height: height,
-      child: SingleChildScrollView(
-        scrollDirection: Axis.vertical,
-        controller: _resourcePanelScrollController,
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Time labels column (on the left)
-            SizedBox(
-              width: timeLabelSize,
-              child: Column(
-                children: List.generate(horizontalLinesCount, (index) {
-                  final DateTime baseDate = _currentViewVisibleDates[0];
-                  final DateTime startDate = DateTime(
-                      baseDate.year,
-                      baseDate.month,
-                      baseDate.day,
-                      widget.timeSlotViewSettings.startHour.toInt());
-                  final DateTime time = startDate.add(Duration(
-                      minutes: index *
-                          CalendarViewHelper.getTimeInterval(
-                              widget.timeSlotViewSettings)));
-                  return Container(
-                    height: timeIntervalHeight,
-                    alignment: Alignment.center,
-                    child: Text(
-                      '${time.hour}:${time.minute.toString().padLeft(2, '0')}',
-                      style: const TextStyle(fontSize: 12),
-                    ),
-                  );
-                }),
-              ),
-            ),
-            // Timeline view
-            Expanded(
-              child: Stack(
-                children: [
-                  Row(
-                    children: resources.asMap().entries.map((entry) {
-                      final int index = isRTL ? resources.length - 1 - entry.key : entry.key;
-                      return Container(
-                        width: resourceColumnWidth,
-                        height: totalTimeSlotsHeight,
-                        decoration: BoxDecoration(
-                          border: Border.all(color: Colors.grey.shade300),
-                        ),
-                        child: Stack(
-                          children: [
-                            // Background grid for time slots
-                            Column(
-                              children: List.generate(horizontalLinesCount, (slotIndex) {
-                                return Container(
-                                  height: timeIntervalHeight,
-                                  decoration: BoxDecoration(
-                                    border: Border(
-                                      bottom: BorderSide(color: Colors.grey.shade200),
-                                    ),
-                                  ),
-                                );
-                              }),
-                            ),
-                            // Appointments
-                            ..._getTimelineAppointments(index),
-                          ],
-                        ),
-                      );
-                    }).toList(),
-                  ),
-                  // Current time indicator
-                  if (widget.showCurrentTimeIndicator &&
-                      currentHour >= startHour &&
-                      currentHour <= widget.timeSlotViewSettings.endHour)
-                    Positioned(
-                      top: currentPosition,
-                      left: timeLabelSize, // Offset by the time label width
-                      right: 0,
-                      child: Container(
-                        height: 2,
-                        color: Colors.red,
-                      ),
-                    ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
   Widget _addCombinedResourceAndTimelineView(
       bool isResourceEnabled,
       double resourceViewSize,
@@ -8748,17 +8529,6 @@ class _SfCalendarState extends State<SfCalendar>
       double timelineViewHeight,
       double agendaHeight,
       bool isRTL) {
-    if (_view != CalendarView.timelineDay) {
-      return _addCustomScrollView(
-        widget.headerHeight,
-        resourceViewSize,
-        isRTL,
-        isResourceEnabled,
-        width,
-        height - widget.headerHeight,
-        agendaHeight,
-      );
-    }
 
     final double timeLabelSize = CalendarViewHelper.getTimeLabelWidth(
         widget.timeSlotViewSettings.timeRulerSize, _view);
@@ -8786,102 +8556,111 @@ class _SfCalendarState extends State<SfCalendar>
     final double currentPosition = (currentHour - startHour) * 60 / widget.timeSlotViewSettings.timeInterval.inMinutes * timeIntervalHeight;
 
     // Calculate the height of the resource panel
-    final double resourcePanelHeight = isResourceEnabled ? resourceViewSize : 0;
+    final double resourcePanelHeight = isResourceEnabled ? 60 : 0;
 
-    // Calculate the total height of the content (resource panel + timeline)
-    final double totalContentHeight = resourcePanelHeight + totalTimeSlotsHeight;
-
-    return SingleChildScrollView(
-      scrollDirection: Axis.vertical,
-      controller: ScrollController(),
-      child: SizedBox(
-        height: totalContentHeight,
-        child: SingleChildScrollView(
+    return Column(
+      children: [
+        // Header (Red Area): "Time" and Service Names (Horizontal scrolling only)
+        SingleChildScrollView(
           scrollDirection: Axis.horizontal,
-          controller: _resourcePanelScrollController,
+          controller: _headerScrollController,
           child: Row(
             children: [
-              // Time labels column
-              Column(
-                children: [
-                  // Placeholder for resource panel (e.g., "Time" label)
-                  Container(
-                    width: timeLabelSize,
-                    height: resourcePanelHeight,
-                    alignment: Alignment.center,
-                    child: const Text("Time"),
-                  ),
-                  // Time labels
-                  SizedBox(
-                    width: timeLabelSize,
-                    child: Column(
-                      children: List.generate(horizontalLinesCount, (slotIndex) {
-                        final DateTime baseDate = _currentViewVisibleDates[0];
-                        final DateTime startDate = DateTime(
-                            baseDate.year,
-                            baseDate.month,
-                            baseDate.day,
-                            widget.timeSlotViewSettings.startHour.toInt());
-                        final DateTime time = startDate.add(Duration(
-                            minutes: slotIndex *
-                                CalendarViewHelper.getTimeInterval(
-                                    widget.timeSlotViewSettings)));
-                        return Container(
-                          height: timeIntervalHeight,
-                          alignment: Alignment.center,
-                          child: Text(
-                            '${time.hour}:${time.minute.toString().padLeft(2, '0')}',
-                            style: const TextStyle(fontSize: 12),
-                          ),
-                        );
-                      }),
-                    ),
-                  ),
-                ],
+              // "Time" label
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                child: SizedBox(
+                  width: timeLabelSize,
+                  height: resourcePanelHeight,
+                  child: const Center(child: Text('Time')),
+                ),
               ),
-              // Resource and timeline columns
+              // Service names
               ...resources.asMap().entries.map((entry) {
                 final int resourceIndex = isRTL ? resources.length - 1 - entry.key : entry.key;
                 final double resourceItemHeight = CalendarViewHelper.getResourceItemHeight(
                     resourceViewSize, height, widget.resourceViewSettings, resources.length);
 
-                return Column(
-                  children: [
-                    // Resource panel item
-                    Container(
-                      width: resourceViewSize,
-                      height: resourcePanelHeight,
-                      child: MouseRegion(
-                        onEnter: (PointerEnterEvent event) {
-                          _pointerEnterEvent(event, false, isRTL, null, widget.headerHeight, 0, isResourceEnabled);
-                        },
-                        onExit: _pointerExitEvent,
-                        onHover: (PointerHoverEvent event) {
-                          _pointerHoverEvent(event, false, isRTL, null, widget.headerHeight, 0, isResourceEnabled);
-                        },
-                        child: GestureDetector(
-                          child: SingleResourceViewWidget(
-                            resource: resources[resourceIndex],
-                            resourceViewSettings: widget.resourceViewSettings,
-                            height: resourceItemHeight,
-                            cellBorderColor: widget.cellBorderColor,
-                            calendarTheme: _calendarTheme,
-                            themeData: _themeData,
-                            isRTL: isRTL,
-                            textScaleFactor: _textScaleFactor,
-                            hoverPosition: _resourceHoverNotifier.value,
-                          ),
-                          onTapUp: (TapUpDetails details) {
-                            _handleOnTapForResourcePanel(details, resourceItemHeight);
-                          },
-                          onLongPressStart: (LongPressStartDetails details) {
-                            _handleOnLongPressForResourcePanel(details, resourceItemHeight);
-                          },
-                        ),
+                return SizedBox(
+                  width: resourceViewSize,
+                  height: resourcePanelHeight,
+                  child: MouseRegion(
+                    onEnter: (PointerEnterEvent event) {
+                      _pointerEnterEvent(event, false, isRTL, null, widget.headerHeight, 0, isResourceEnabled);
+                    },
+                    onExit: _pointerExitEvent,
+                    onHover: (PointerHoverEvent event) {
+                      _pointerHoverEvent(event, false, isRTL, null, widget.headerHeight, 0, isResourceEnabled);
+                    },
+                    child: GestureDetector(
+                      child: SingleResourceViewWidget(
+                        resource: resources[resourceIndex],
+                        resourceViewSettings: widget.resourceViewSettings,
+                        height: resourceItemHeight,
+                        cellBorderColor: widget.cellBorderColor,
+                        calendarTheme: _calendarTheme,
+                        themeData: _themeData,
+                        isRTL: isRTL,
+                        textScaleFactor: _textScaleFactor,
+                        hoverPosition: _resourceHoverNotifier.value,
+                      ),
+                      onTapUp: (TapUpDetails details) {
+                        _handleOnTapForResourcePanel(details, resourceItemHeight);
+                      },
+                      onLongPressStart: (LongPressStartDetails details) {
+                        _handleOnLongPressForResourcePanel(details, resourceItemHeight);
+                      },
+                    ),
+                  ),
+                );
+              }).toList(),
+            ],
+          ),
+        ),
+        // Content (Blue Area): Time Frame List + Calendar Table (Horizontal and Vertical scrolling)
+        Expanded(
+          child: SingleChildScrollView(
+            scrollDirection: Axis.vertical,
+            controller: _resourcePanelScrollController,
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              controller: _contentScrollController,
+              child: Row(
+                children: [
+                  // Time labels column
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                    child: SizedBox(
+                      width: timeLabelSize,
+                      child: Column(
+                        children: List.generate(horizontalLinesCount, (slotIndex) {
+                          final DateTime baseDate = _currentViewVisibleDates[0];
+                          final DateTime startDate = DateTime(
+                              baseDate.year,
+                              baseDate.month,
+                              baseDate.day,
+                              widget.timeSlotViewSettings.startHour.toInt());
+                          final DateTime time = startDate.add(Duration(
+                              minutes: slotIndex *
+                                  CalendarViewHelper.getTimeInterval(
+                                      widget.timeSlotViewSettings)));
+                          return Container(
+                            height: timeIntervalHeight,
+                            alignment: Alignment.topCenter,
+                            child: Text(
+                              '${time.hour}:${time.minute.toString().padLeft(2, '0')}',
+                              style: const TextStyle(fontSize: 12),
+                            ),
+                          );
+                        }),
                       ),
                     ),
-                    // Timeline column
-                    Container(
+                  ),
+                  // Calendar table columns
+                  ...resources.asMap().entries.map((entry) {
+                    final int resourceIndex = isRTL ? resources.length - 1 - entry.key : entry.key;
+
+                    return Container(
                       width: resourceViewSize,
                       height: totalTimeSlotsHeight,
                       decoration: BoxDecoration(
@@ -8894,10 +8673,10 @@ class _SfCalendarState extends State<SfCalendar>
                             children: List.generate(horizontalLinesCount, (slotIndex) {
                               return Expanded(
                                 child: Container(
-                                  height: timeIntervalHeight,
+                                  height: timeIntervalHeight, // Adjust for border width
                                   decoration: BoxDecoration(
                                     border: Border(
-                                      bottom: BorderSide(color: Colors.grey.shade200),
+                                      bottom: BorderSide(color: Colors.grey.shade200, width: 1.0),
                                     ),
                                   ),
                                 ),
@@ -8921,14 +8700,14 @@ class _SfCalendarState extends State<SfCalendar>
                             ),
                         ],
                       ),
-                    ),
-                  ],
-                );
-              }).toList(),
-            ],
+                    );
+                  }).toList(),
+                ],
+              ),
+            ),
           ),
         ),
-      ),
+      ],
     );
   }
 
@@ -8999,7 +8778,6 @@ class _SfCalendarState extends State<SfCalendar>
               widget.timeSlotViewSettings.numberOfDaysInView),
         ),
       ),
-      // Resource panel & time line
       // Combined resource panel and timeline view
       Positioned(
         top: widget.headerHeight,
@@ -12089,24 +11867,12 @@ class SingleResourceViewWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-
-
     return Container(
       height: height,
       alignment: Alignment.center,
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          if (resourceViewSettings.showAvatar)
-            CircleAvatar(
-              radius: height * 0.3,
-              backgroundColor: Colors.blue,
-              child: Text(
-                resource.displayName[0],
-                style: const TextStyle(color: Colors.white),
-              ),
-            ),
-          SizedBox(height: height * 0.1),
           Text(
             resource.displayName,
             style: resourceViewSettings.displayNameTextStyle,

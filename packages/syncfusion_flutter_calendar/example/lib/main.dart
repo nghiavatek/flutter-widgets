@@ -50,7 +50,6 @@ class _MyHomePageState extends State<MyHomePage> {
             initialDisplayDate: _selectedDate,
             resourceViewSettings: const ResourceViewSettings(
               showAvatar: false,
-              visibleResourceCount: 1,
               size: 100,
               displayNameTextStyle: TextStyle(
                 fontSize: 14,
@@ -67,8 +66,8 @@ class _MyHomePageState extends State<MyHomePage> {
     final List<Appointment> appointments = <Appointment>[];
     appointments.add(
       Appointment(
-        startTime: DateTime(_selectedDate.year, _selectedDate.month, _selectedDate.day, 2, 0),
-        endTime: DateTime(_selectedDate.year, _selectedDate.month, _selectedDate.day, 3, 0),
+        startTime: DateTime(_selectedDate.year, _selectedDate.month, _selectedDate.day, 2, 15),
+        endTime: DateTime(_selectedDate.year, _selectedDate.month, _selectedDate.day, 3, 1),
         subject: 'Mohammed',
         color: Colors.blue,
         resourceIds: ['Service 1'],
@@ -76,8 +75,8 @@ class _MyHomePageState extends State<MyHomePage> {
     );
     appointments.add(
       Appointment(
-        startTime: DateTime(_selectedDate.year, _selectedDate.month, _selectedDate.day, 3, 0),
-        endTime: DateTime(_selectedDate.year, _selectedDate.month, _selectedDate.day, 4, 0),
+        startTime: DateTime(_selectedDate.year, _selectedDate.month, _selectedDate.day, 3, 20),
+        endTime: DateTime(_selectedDate.year, _selectedDate.month, _selectedDate.day, 4, 1),
         subject: 'Mohammed',
         color: Colors.green,
         resourceIds: ['Service 2'],
@@ -108,7 +107,7 @@ class _MyHomePageState extends State<MyHomePage> {
 
   List<CalendarResource> _getResources() {
     return [
-      CalendarResource(id: 'Service 1', displayName: 'Service 1'),
+      CalendarResource(id: 'Service 1', displayName: 'Service 1sdfdfsdfsdfsdfs'),
       CalendarResource(id: 'Service 2', displayName: 'Service 2'),
       CalendarResource(id: 'Service 3', displayName: 'Service 3'),
       CalendarResource(id: 'Service 4', displayName: 'Service 4'),
