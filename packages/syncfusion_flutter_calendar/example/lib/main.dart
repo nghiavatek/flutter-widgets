@@ -35,12 +35,12 @@ class _MyHomePageState extends State<MyHomePage> {
         body: Padding(
           padding: const EdgeInsets.only(top: 40.0, bottom: 40),
           child: SfCalendar(
-            view: CalendarView.timelineDay, // Keep timelineDay for proper separation
-            showCurrentTimeIndicator: true,
+            view: CalendarView.timelineDay,
             showDatePickerButton: true,
             timeSlotViewSettings: const TimeSlotViewSettings(
               startHour: 1,
               endHour: 20,
+              timeFormat: 'h:mm',
               timeInterval: Duration(minutes: 30),
               timeIntervalHeight: 60,
             ),
@@ -79,6 +79,24 @@ class _MyHomePageState extends State<MyHomePage> {
         endTime: DateTime(_selectedDate.year, _selectedDate.month, _selectedDate.day, 4, 1),
         subject: 'Mohammed',
         color: Colors.green,
+        resourceIds: ['Service 2'],
+      ),
+    );
+    appointments.add(
+      Appointment(
+        startTime: DateTime(_selectedDate.year, _selectedDate.month, _selectedDate.day, 3, 20),
+        endTime: DateTime(_selectedDate.year, _selectedDate.month, _selectedDate.day, 4, 30),
+        subject: 'Mohammed',
+        color: Colors.green,
+        resourceIds: ['Service 2'],
+      ),
+    );
+    appointments.add(
+      Appointment(
+        startTime: DateTime(_selectedDate.year, _selectedDate.month, _selectedDate.day, 3, 20),
+        endTime: DateTime(_selectedDate.year, _selectedDate.month, _selectedDate.day, 4, 30),
+        subject: 'Mohammed',
+        color: Colors.pink,
         resourceIds: ['Service 2'],
       ),
     );

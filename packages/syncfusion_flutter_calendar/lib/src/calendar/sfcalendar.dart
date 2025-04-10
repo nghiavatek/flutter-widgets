@@ -27,7 +27,6 @@ import 'common/date_time_engine.dart';
 import 'common/enums.dart';
 import 'common/event_args.dart';
 import 'resource_view/calendar_resource.dart';
-import 'resource_view/resource_view.dart';
 import 'settings/drag_and_drop_settings.dart';
 import 'settings/header_style.dart';
 import 'settings/month_view_settings.dart';
@@ -8424,56 +8423,51 @@ class _SfCalendarState extends State<SfCalendar>
     return _resourceCollection![index];
   }
 
-  /// Adds the custom scroll view which used to produce the infinity scroll.
-  // Widget _addCustomScrollView(
-  //     double top,
-  //     double resourceViewSize,
-  //     bool isRTL,
-  //     bool isResourceEnabled,
-  //     double width,
-  //     double height,
-  //     double agendaHeight) {
-  //   return Positioned(
-  //     top: top,
-  //     left: isResourceEnabled && !isRTL ? resourceViewSize : 0,
-  //     right: isResourceEnabled && isRTL ? resourceViewSize : 0,
-  //     height: height - agendaHeight,
-  //     child: _OpacityWidget(
-  //         opacity: _opacity,
-  //         child: CustomCalendarScrollView(
-  //           widget,
-  //           _view,
-  //           width - resourceViewSize,
-  //           height - agendaHeight,
-  //           _agendaSelectedDate,
-  //           isRTL,
-  //           _locale,
-  //           _calendarTheme,
-  //           _themeData,
-  //           _timeZoneLoaded ? widget.specialRegions : null,
-  //           _blackoutDates,
-  //           _controller,
-  //           _removeDatePicker,
-  //           _resourcePanelScrollController,
-  //           _resourceCollection,
-  //           _textScaleFactor,
-  //           _isMobilePlatform,
-  //           _fadeInController,
-  //           widget.minDate,
-  //           widget.maxDate,
-  //           _localizations,
-  //           _timelineMonthWeekNumberNotifier,
-  //           _updateCalendarState,
-  //           _getCalendarStateDetails,
-  //           key: _customScrollViewKey,
-  //         )),
-  //   );
-  // }
+  int getMaxOverlap(String resourceId, List<Appointment> allAppointments) {
+    // Filter appointments for the specific resource
+    final List<Appointment> appointments = allAppointments
+        .where((app) => app.resourceIds != null && app.resourceIds!.contains(resourceId))
+        .toList();
+
+    if (appointments.isEmpty)
+      return 0;
+
+    // Sort appointments by start time
+    appointments.sort((a, b) => a.startTime.compareTo(b.startTime));
+
+    int maxOverlap = 0;
+    int currentOverlap = 0;
+    final List<DateTime> endTimes = [];
+
+    for (final Appointment appointment in appointments) {
+      // Remove end times that are before the current start time
+      endTimes.removeWhere((end) => end.isBefore(appointment.startTime));
+      currentOverlap = endTimes.length;
+
+      // Add the current appointment's end time
+      endTimes.add(appointment.endTime);
+      currentOverlap++;
+
+      if (currentOverlap > maxOverlap) {
+        maxOverlap = currentOverlap;
+      }
+    }
+
+    return maxOverlap;
+  }
+
+  double getColumnWidth(String resourceId, double minWidth, List<Appointment> allAppointments) {
+    final int maxOverlap = getMaxOverlap(resourceId, allAppointments);
+    if (maxOverlap == 0 || maxOverlap == 1) {
+      return minWidth; // Return minWidth if no overlap
+    } else {
+      return 50.0 * maxOverlap;
+    }
+  }
 
   List<Widget> _getTimelineAppointments(int resourceIndex) {
     final List<Widget> appointmentWidgets = [];
-    final bool isResourceEnabled = CalendarViewHelper.isResourceEnabled(
-        widget.dataSource, _view);
+    final bool isResourceEnabled = CalendarViewHelper.isResourceEnabled(widget.dataSource, _view);
 
     // Get appointments for the current resource
     final List<Appointment> appointments = widget.dataSource?.appointments
@@ -8482,36 +8476,90 @@ class _SfCalendarState extends State<SfCalendar>
         .toList() ??
         [];
 
+    if (appointments.isEmpty)
+      return appointmentWidgets;
+
+    // Sort appointments by start time
+    appointments.sort((a, b) => a.startTime.compareTo(b.startTime));
+
+    // Calculate the maximum overlap for this resource
+    const double appointmentWidth = 40;
+
+    // Calculate time slot positions
+    final double startHour = widget.timeSlotViewSettings.startHour;
+    final Duration timeInterval = widget.timeSlotViewSettings.timeInterval;
+    final double timeIntervalHeight = widget.timeSlotViewSettings.timeIntervalHeight;
+
+    // Track lanes for overlapping appointments
+    final List<List<Appointment>> lanes = [];
     for (final Appointment appointment in appointments) {
-      final DateTime startTime = appointment.startTime;
-      final DateTime endTime = appointment.endTime;
-
-      // Calculate the position and height of the appointment
-      final double startHour = widget.timeSlotViewSettings.startHour;
-      final Duration timeInterval = widget.timeSlotViewSettings.timeInterval;
-      final double timeIntervalHeight = widget.timeSlotViewSettings.timeIntervalHeight;
-
-      // Calculate the exact fractional slot position (no rounding)
-      final double startSlot = (startTime.hour + startTime.minute / 60 - startHour) * 60 / timeInterval.inMinutes;
-      final double endSlot = (endTime.hour + endTime.minute / 60 - startHour) * 60 / timeInterval.inMinutes;
+      final double startSlot = (appointment.startTime.hour + appointment.startTime.minute / 60 - startHour) * 60 / timeInterval.inMinutes;
+      final double endSlot = (appointment.endTime.hour + appointment.endTime.minute / 60 - startHour) * 60 / timeInterval.inMinutes;
 
       final double top = startSlot * timeIntervalHeight;
       final double height = (endSlot - startSlot) * timeIntervalHeight;
 
+      // Find a lane for this appointment
+      int lane = 0;
+      bool placed = false;
+      for (int i = 0; i < lanes.length; i++) {
+        final laneAppointments = lanes[i];
+        if (!laneAppointments.any((app) => app.endTime.isAfter(appointment.startTime) && app.startTime.isBefore(appointment.endTime))) {
+          lane = i;
+          laneAppointments.add(appointment);
+          placed = true;
+          break;
+        }
+      }
+      if (!placed) {
+        lane = lanes.length;
+        lanes.add([appointment]);
+      }
+
+      final double left = appointmentWidth * lane;
+
       appointmentWidgets.add(
         Positioned(
           top: top,
-          left: 0,
-          right: 0,
+          left: left,
+          width: 35,
           height: height,
           child: Container(
-            margin: const EdgeInsets.all(2),
-            color: appointment.color,
-            child: Center(
-              child: Text(
-                appointment.subject,
-                style: const TextStyle(color: Colors.white, fontSize: 12),
-              ),
+            margin: const EdgeInsets.symmetric(horizontal: 2, vertical: 2),
+            decoration: BoxDecoration(
+              color: appointment.color,
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Column(
+              children: [
+                Container(
+                  margin: const EdgeInsets.only(top: 4),
+                  child: CircleAvatar(
+                    radius: 12,
+                    backgroundColor: Colors.white,
+                    child: Icon(
+                      Icons.person,
+                      color: appointment.color,
+                      size: 16,
+                    ),
+                  ),
+                ),
+                Expanded(
+                  child: Center(
+                    child: RotatedBox(
+                      quarterTurns: -1,
+                      child: Text(
+                        appointment.subject,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
         ),
@@ -8529,7 +8577,6 @@ class _SfCalendarState extends State<SfCalendar>
       double timelineViewHeight,
       double agendaHeight,
       bool isRTL) {
-
     final double timeLabelSize = CalendarViewHelper.getTimeLabelWidth(
         widget.timeSlotViewSettings.timeRulerSize, _view);
 
@@ -8558,6 +8605,11 @@ class _SfCalendarState extends State<SfCalendar>
     // Calculate the height of the resource panel
     final double resourcePanelHeight = isResourceEnabled ? 60 : 0;
 
+    // Calculate dynamic column widths for each resource
+    final List<double> columnWidths = resources.map((resource) {
+      return getColumnWidth(resource.id as String, resourceViewSize, widget.dataSource?.appointments?.cast<Appointment>() ?? []);
+    }).toList();
+
     return Column(
       children: [
         // Header (Red Area): "Time" and Service Names (Horizontal scrolling only)
@@ -8579,10 +8631,10 @@ class _SfCalendarState extends State<SfCalendar>
               ...resources.asMap().entries.map((entry) {
                 final int resourceIndex = isRTL ? resources.length - 1 - entry.key : entry.key;
                 final double resourceItemHeight = CalendarViewHelper.getResourceItemHeight(
-                    resourceViewSize, height, widget.resourceViewSettings, resources.length);
+                    columnWidths[resourceIndex], height, widget.resourceViewSettings, resources.length);
 
                 return SizedBox(
-                  width: resourceViewSize,
+                  width: columnWidths[resourceIndex],
                   height: resourcePanelHeight,
                   child: MouseRegion(
                     onEnter: (PointerEnterEvent event) {
@@ -8642,8 +8694,7 @@ class _SfCalendarState extends State<SfCalendar>
                               widget.timeSlotViewSettings.startHour.toInt());
                           final DateTime time = startDate.add(Duration(
                               minutes: slotIndex *
-                                  CalendarViewHelper.getTimeInterval(
-                                      widget.timeSlotViewSettings)));
+                                  CalendarViewHelper.getTimeInterval(widget.timeSlotViewSettings)));
                           return Container(
                             height: timeIntervalHeight,
                             alignment: Alignment.topCenter,
@@ -8661,7 +8712,7 @@ class _SfCalendarState extends State<SfCalendar>
                     final int resourceIndex = isRTL ? resources.length - 1 - entry.key : entry.key;
 
                     return Container(
-                      width: resourceViewSize,
+                      width: columnWidths[resourceIndex],
                       height: totalTimeSlotsHeight,
                       decoration: BoxDecoration(
                         border: Border.all(color: Colors.grey.shade300),
@@ -8673,7 +8724,7 @@ class _SfCalendarState extends State<SfCalendar>
                             children: List.generate(horizontalLinesCount, (slotIndex) {
                               return Expanded(
                                 child: Container(
-                                  height: timeIntervalHeight, // Adjust for border width
+                                  height: timeIntervalHeight,
                                   decoration: BoxDecoration(
                                     border: Border(
                                       bottom: BorderSide(color: Colors.grey.shade200, width: 1.0),
@@ -8710,7 +8761,6 @@ class _SfCalendarState extends State<SfCalendar>
       ],
     );
   }
-
   //Render Layout sfCalendar widget
   Widget _addChildren(
       double agendaHeight, double height, double width, bool isRTL) {
