@@ -39,7 +39,7 @@ class _MyHomePageState extends State<MyHomePage> {
             showDatePickerButton: true,
             timeSlotViewSettings: const TimeSlotViewSettings(
               startHour: 1,
-              endHour: 20,
+              endHour: 23,
               timeFormat: 'h:mm',
               timeInterval: Duration(minutes: 30),
               timeIntervalHeight: 60,

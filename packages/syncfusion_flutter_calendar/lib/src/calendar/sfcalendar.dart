@@ -8459,7 +8459,7 @@ class _SfCalendarState extends State<SfCalendar>
   double getColumnWidth(String resourceId, double minWidth, List<Appointment> allAppointments) {
     final int maxOverlap = getMaxOverlap(resourceId, allAppointments);
     if (maxOverlap == 0 || maxOverlap == 1) {
-      return minWidth; // Return minWidth if no overlap
+      return minWidth;
     } else {
       return 50.0 * maxOverlap;
     }
@@ -8620,7 +8620,7 @@ class _SfCalendarState extends State<SfCalendar>
             children: [
               // "Time" label
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                padding: const EdgeInsets.symmetric(horizontal: 4.0),
                 child: SizedBox(
                   width: timeLabelSize,
                   height: resourcePanelHeight,
@@ -8681,7 +8681,7 @@ class _SfCalendarState extends State<SfCalendar>
                 children: [
                   // Time labels column
                   Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                    padding: const EdgeInsets.symmetric(horizontal: 4.0),
                     child: SizedBox(
                       width: timeLabelSize,
                       child: Column(
@@ -8695,12 +8695,22 @@ class _SfCalendarState extends State<SfCalendar>
                           final DateTime time = startDate.add(Duration(
                               minutes: slotIndex *
                                   CalendarViewHelper.getTimeInterval(widget.timeSlotViewSettings)));
+                          final String hourMinute = DateFormat('hh:mm').format(time);
+                          final String amPm = DateFormat('a').format(time);
                           return Container(
                             height: timeIntervalHeight,
                             alignment: Alignment.topCenter,
-                            child: Text(
-                              '${time.hour}:${time.minute.toString().padLeft(2, '0')}',
-                              style: const TextStyle(fontSize: 12),
+                            child: Column(
+                              children: [
+                                Text(
+                                  hourMinute,
+                                  style: const TextStyle(fontSize: 12),
+                                ),
+                                Text(
+                                  amPm,
+                                  style: const TextStyle(fontSize: 12),
+                                ),
+                              ],
                             ),
                           );
                         }),
