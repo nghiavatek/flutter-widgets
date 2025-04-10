@@ -8740,6 +8740,198 @@ class _SfCalendarState extends State<SfCalendar>
     );
   }
 
+  Widget _addCombinedResourceAndTimelineView(
+      bool isResourceEnabled,
+      double resourceViewSize,
+      double height,
+      double width,
+      double timelineViewHeight,
+      double agendaHeight,
+      bool isRTL) {
+    if (_view != CalendarView.timelineDay) {
+      return _addCustomScrollView(
+        widget.headerHeight,
+        resourceViewSize,
+        isRTL,
+        isResourceEnabled,
+        width,
+        height - widget.headerHeight,
+        agendaHeight,
+      );
+    }
+
+    final double timeLabelSize = CalendarViewHelper.getTimeLabelWidth(
+        widget.timeSlotViewSettings.timeRulerSize, _view);
+
+    // Calculate the number of time slots (vertical lines)
+    final int horizontalLinesCount = ((widget.timeSlotViewSettings.endHour -
+        widget.timeSlotViewSettings.startHour) *
+        60 /
+        widget.timeSlotViewSettings.timeInterval.inMinutes)
+        .round();
+
+    // Calculate the total height of the timeline based on time slots
+    final double timeIntervalHeight = widget.timeSlotViewSettings.timeIntervalHeight;
+    final double totalTimeSlotsHeight = timeIntervalHeight * horizontalLinesCount;
+
+    // List of resources (default to a single resource if resources are not enabled)
+    final List<CalendarResource> resources = isResourceEnabled
+        ? _resourceCollection!
+        : [CalendarResource(id: 'default', displayName: '')];
+
+    // Calculate the position of the current time indicator
+    final DateTime now = DateTime.now();
+    final double startHour = widget.timeSlotViewSettings.startHour;
+    final double currentHour = now.hour + now.minute / 60;
+    final double currentPosition = (currentHour - startHour) * 60 / widget.timeSlotViewSettings.timeInterval.inMinutes * timeIntervalHeight;
+
+    // Calculate the height of the resource panel
+    final double resourcePanelHeight = isResourceEnabled ? resourceViewSize : 0;
+
+    // Calculate the total height of the content (resource panel + timeline)
+    final double totalContentHeight = resourcePanelHeight + totalTimeSlotsHeight;
+
+    return SingleChildScrollView(
+      scrollDirection: Axis.vertical,
+      controller: ScrollController(),
+      child: SizedBox(
+        height: totalContentHeight,
+        child: SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          controller: _resourcePanelScrollController,
+          child: Row(
+            children: [
+              // Time labels column
+              Column(
+                children: [
+                  // Placeholder for resource panel (e.g., "Time" label)
+                  Container(
+                    width: timeLabelSize,
+                    height: resourcePanelHeight,
+                    alignment: Alignment.center,
+                    child: const Text("Time"),
+                  ),
+                  // Time labels
+                  SizedBox(
+                    width: timeLabelSize,
+                    child: Column(
+                      children: List.generate(horizontalLinesCount, (slotIndex) {
+                        final DateTime baseDate = _currentViewVisibleDates[0];
+                        final DateTime startDate = DateTime(
+                            baseDate.year,
+                            baseDate.month,
+                            baseDate.day,
+                            widget.timeSlotViewSettings.startHour.toInt());
+                        final DateTime time = startDate.add(Duration(
+                            minutes: slotIndex *
+                                CalendarViewHelper.getTimeInterval(
+                                    widget.timeSlotViewSettings)));
+                        return Container(
+                          height: timeIntervalHeight,
+                          alignment: Alignment.center,
+                          child: Text(
+                            '${time.hour}:${time.minute.toString().padLeft(2, '0')}',
+                            style: const TextStyle(fontSize: 12),
+                          ),
+                        );
+                      }),
+                    ),
+                  ),
+                ],
+              ),
+              // Resource and timeline columns
+              ...resources.asMap().entries.map((entry) {
+                final int resourceIndex = isRTL ? resources.length - 1 - entry.key : entry.key;
+                final double resourceItemHeight = CalendarViewHelper.getResourceItemHeight(
+                    resourceViewSize, height, widget.resourceViewSettings, resources.length);
+
+                return Column(
+                  children: [
+                    // Resource panel item
+                    Container(
+                      width: resourceViewSize,
+                      height: resourcePanelHeight,
+                      child: MouseRegion(
+                        onEnter: (PointerEnterEvent event) {
+                          _pointerEnterEvent(event, false, isRTL, null, widget.headerHeight, 0, isResourceEnabled);
+                        },
+                        onExit: _pointerExitEvent,
+                        onHover: (PointerHoverEvent event) {
+                          _pointerHoverEvent(event, false, isRTL, null, widget.headerHeight, 0, isResourceEnabled);
+                        },
+                        child: GestureDetector(
+                          child: SingleResourceViewWidget(
+                            resource: resources[resourceIndex],
+                            resourceViewSettings: widget.resourceViewSettings,
+                            height: resourceItemHeight,
+                            cellBorderColor: widget.cellBorderColor,
+                            calendarTheme: _calendarTheme,
+                            themeData: _themeData,
+                            isRTL: isRTL,
+                            textScaleFactor: _textScaleFactor,
+                            hoverPosition: _resourceHoverNotifier.value,
+                          ),
+                          onTapUp: (TapUpDetails details) {
+                            _handleOnTapForResourcePanel(details, resourceItemHeight);
+                          },
+                          onLongPressStart: (LongPressStartDetails details) {
+                            _handleOnLongPressForResourcePanel(details, resourceItemHeight);
+                          },
+                        ),
+                      ),
+                    ),
+                    // Timeline column
+                    Container(
+                      width: resourceViewSize,
+                      height: totalTimeSlotsHeight,
+                      decoration: BoxDecoration(
+                        border: Border.all(color: Colors.grey.shade300),
+                      ),
+                      child: Stack(
+                        children: [
+                          // Background grid for time slots
+                          Column(
+                            children: List.generate(horizontalLinesCount, (slotIndex) {
+                              return Expanded(
+                                child: Container(
+                                  height: timeIntervalHeight,
+                                  decoration: BoxDecoration(
+                                    border: Border(
+                                      bottom: BorderSide(color: Colors.grey.shade200),
+                                    ),
+                                  ),
+                                ),
+                              );
+                            }),
+                          ),
+                          // Appointments
+                          ..._getTimelineAppointments(resourceIndex),
+                          // Current time indicator
+                          if (widget.showCurrentTimeIndicator &&
+                              currentHour >= startHour &&
+                              currentHour <= widget.timeSlotViewSettings.endHour)
+                            Positioned(
+                              top: currentPosition,
+                              left: 0,
+                              right: 0,
+                              child: Container(
+                                height: 2,
+                                color: Colors.red,
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                  ],
+                );
+              }).toList(),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   //Render Layout sfCalendar widget
   Widget _addChildren(
       double agendaHeight, double height, double width, bool isRTL) {
@@ -8807,33 +8999,27 @@ class _SfCalendarState extends State<SfCalendar>
               widget.timeSlotViewSettings.numberOfDaysInView),
         ),
       ),
-      // Resource panel (under the header)
+      // Resource panel & time line
+      // Combined resource panel and timeline view
       Positioned(
         top: widget.headerHeight,
         left: 0,
         right: 0,
-        height: resourcePanelHeight,
-        child: _addResourcePanel(isResourceEnabled, resourceViewSize, height, isRTL),
-      ),
-      // Timeline view (under the resource panel)
-      Positioned(
-        top: widget.headerHeight + resourcePanelHeight,
-        left: 0,
-        right: 0,
-        height: timelineViewHeight,
+        height: height - widget.headerHeight - agendaHeight,
         child: _OpacityWidget(
           opacity: _opacity,
-          child: _addCustomScrollView(
-            widget.headerHeight + resourcePanelHeight,
-            0, // No resource panel on the side
-            isRTL,
+          child: _addCombinedResourceAndTimelineView(
             isResourceEnabled,
+            resourceViewSize,
+            height,
             width,
             timelineViewHeight,
             agendaHeight,
+            isRTL,
           ),
         ),
       ),
+
       // Agenda view (adjusted position)
       _addAgendaView(
           agendaHeight,
