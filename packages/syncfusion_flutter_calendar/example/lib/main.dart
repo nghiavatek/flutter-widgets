@@ -50,7 +50,7 @@ class _MyHomePageState extends State<MyHomePage> {
             initialDisplayDate: _selectedDate,
             resourceViewSettings: const ResourceViewSettings(
               showAvatar: false,
-              visibleResourceCount: 5,
+              visibleResourceCount: 1,
               size: 100,
               displayNameTextStyle: TextStyle(
                 fontSize: 14,
@@ -92,6 +92,15 @@ class _MyHomePageState extends State<MyHomePage> {
         resourceIds: ['Service 3'],
       ),
     );
+    appointments.add(
+      Appointment(
+        startTime: DateTime(_selectedDate.year, _selectedDate.month, _selectedDate.day, 1, 0),
+        endTime: DateTime(_selectedDate.year, _selectedDate.month, _selectedDate.day, 2, 0),
+        subject: 'Mohammed',
+        color: Colors.yellow,
+        resourceIds: ['Service 6'],
+      ),
+    );
 
     final List<CalendarResource> resources = _getResources();
     return _AppointmentDataSource(appointments, resources);
@@ -102,6 +111,9 @@ class _MyHomePageState extends State<MyHomePage> {
       CalendarResource(id: 'Service 1', displayName: 'Service 1'),
       CalendarResource(id: 'Service 2', displayName: 'Service 2'),
       CalendarResource(id: 'Service 3', displayName: 'Service 3'),
+      CalendarResource(id: 'Service 4', displayName: 'Service 4'),
+      CalendarResource(id: 'Service 5', displayName: 'Service 5'),
+      CalendarResource(id: 'Service 6', displayName: 'Service 6'),
     ];
   }
 }

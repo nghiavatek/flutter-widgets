@@ -8375,36 +8375,37 @@ class _SfCalendarState extends State<SfCalendar>
         onHover: (PointerHoverEvent event) {
           _pointerHoverEvent(event, false, isRTL, null, widget.headerHeight, 0, isResourceEnabled);
         },
-        child: GestureDetector(
-          child: ListView.builder(
-            scrollDirection: Axis.horizontal,
-            controller: _resourcePanelScrollController,
-            physics: const ClampingScrollPhysics(),
-            itemCount: _resourceCollection!.length,
-            itemBuilder: (BuildContext context, int index) {
-              final int resourceIndex = isRTL ? _resourceCollection!.length - 1 - index : index;
-              return Container(
-                width: resourceViewSize, // Fixed width for each resource item
-                child: SingleResourceViewWidget(
-                  resource: _resourceCollection![resourceIndex],
-                  resourceViewSettings: widget.resourceViewSettings,
-                  height: resourceItemHeight,
-                  cellBorderColor: widget.cellBorderColor,
-                  calendarTheme: _calendarTheme,
-                  themeData: _themeData,
-                  isRTL: isRTL,
-                  textScaleFactor: _textScaleFactor,
-                  hoverPosition: _resourceHoverNotifier.value,
-                ),
-              );
-            },
-          ),
-          onTapUp: (TapUpDetails details) {
-            _handleOnTapForResourcePanel(details, resourceItemHeight);
-          },
-          onLongPressStart: (LongPressStartDetails details) {
-            _handleOnLongPressForResourcePanel(details, resourceItemHeight);
-          },
+        child: Row(
+          children: [
+            const SizedBox(
+              child: Text("Time"),
+            ),
+            Expanded(
+              child: ListView.builder(
+                scrollDirection: Axis.horizontal,
+                controller: _resourcePanelScrollController,
+                physics: const ClampingScrollPhysics(),
+                itemCount: _resourceCollection!.length,
+                itemBuilder: (BuildContext context, int index) {
+                  final int resourceIndex = isRTL ? _resourceCollection!.length - 1 - index : index;
+                  return Container(
+                    width: resourceViewSize, // Fixed width for each resource item
+                    child: SingleResourceViewWidget(
+                      resource: _resourceCollection![resourceIndex],
+                      resourceViewSettings: widget.resourceViewSettings,
+                      height: resourceItemHeight,
+                      cellBorderColor: widget.cellBorderColor,
+                      calendarTheme: _calendarTheme,
+                      themeData: _themeData,
+                      isRTL: isRTL,
+                      textScaleFactor: _textScaleFactor,
+                      hoverPosition: _resourceHoverNotifier.value,
+                    ),
+                  );
+                },
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -8657,7 +8658,7 @@ class _SfCalendarState extends State<SfCalendar>
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Time labels column (on the left)
-            Container(
+            SizedBox(
               width: timeLabelSize,
               child: Column(
                 children: List.generate(horizontalLinesCount, (index) {
@@ -8812,8 +8813,7 @@ class _SfCalendarState extends State<SfCalendar>
         left: 0,
         right: 0,
         height: resourcePanelHeight,
-        child: _addResourcePanel(
-            isResourceEnabled, resourceViewSize, height, isRTL),
+        child: _addResourcePanel(isResourceEnabled, resourceViewSize, height, isRTL),
       ),
       // Timeline view (under the resource panel)
       Positioned(
