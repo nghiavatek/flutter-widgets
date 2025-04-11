@@ -162,6 +162,7 @@ class SfCalendar extends StatefulWidget {
   /// Use [DataSource] property to set the appointments to the scheduler.
   SfCalendar({
     Key? key,
+    this.currentTimeIndicatorColor,
     this.isRtl = false,
     this.changeTextTime = false,
     this.view = CalendarView.day,
@@ -235,9 +236,10 @@ class SfCalendar extends StatefulWidget {
         maxDate = maxDate ?? DateTime(9999, 12, 31),
         super(key: key);
 
-  ///pass directly to _addCombine widget
+  ///custom variable
   final bool? isRtl;
   final bool changeTextTime;
+  final Color? currentTimeIndicatorColor;
   /// A builder that sets the widget to display on the calendar widget when
   /// the appointments are being loaded.
   ///
@@ -8559,7 +8561,7 @@ class _SfCalendarState extends State<SfCalendar>
                         child: Padding(
                           padding: const EdgeInsets.all(1), // Consistent padding inside the border
                           child: CircleAvatar(
-                            radius: 12,
+                            radius: 14,
                             backgroundColor: Colors.white,
                             backgroundImage: appointment.avatarUrl != null
                                 ? NetworkImage(appointment.avatarUrl!)
@@ -8576,6 +8578,7 @@ class _SfCalendarState extends State<SfCalendar>
                       quarterTurns: -1,
                       child: Text(
                         appointment.subject,
+                        textAlign: TextAlign.center,
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
@@ -8718,98 +8721,143 @@ class _SfCalendarState extends State<SfCalendar>
             child: SingleChildScrollView(
               scrollDirection: Axis.horizontal,
               controller: _contentScrollController,
-              child: Row(
+              child: Stack(
                 children: [
-                  // Time labels column
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 4.0),
-                    child: SizedBox(
-                      width: timeLabelSize,
-                      child: Column(
-                        children: List.generate(horizontalLinesCount, (slotIndex) {
-                          final DateTime baseDate = _currentViewVisibleDates[0];
-                          final DateTime startDate = DateTime(
-                              baseDate.year,
-                              baseDate.month,
-                              baseDate.day,
-                              widget.timeSlotViewSettings.startHour.toInt());
-                          final DateTime time = startDate.add(Duration(
-                              minutes: slotIndex *
-                                  CalendarViewHelper.getTimeInterval(widget.timeSlotViewSettings)));
-                          final String hourMinute = DateFormat('hh:mm').format(time);
-                          final String amPm = DateFormat('a').format(time);
-                          return Container(
-                            height: timeIntervalHeight,
-                            alignment: Alignment.topCenter,
-                            child: Column(
-                              children: [
-                                Text(
-                                  hourMinute,
-                                  style: const TextStyle(fontSize: 12),
-                                ),
-                                Text(
-                                  amPm,
-                                  style: const TextStyle(fontSize: 12),
-                                ),
-                              ],
-                            ),
-                          );
-                        }),
-                      ),
-                    ),
-                  ),
-                  // Calendar table columns
-                  ...displayResources.asMap().entries.map((entry) {
-                    final int resourceIndex = entry.key;
-
-                    // Adjust the resource index for _getTimelineAppointments based on the original resources list
-                    final int originalResourceIndex = isRTL
-                        ? resources.length - 1 - resourceIndex
-                        : resourceIndex;
-
-                    return Container(
-                      width: columnWidths[resourceIndex],
-                      height: totalTimeSlotsHeight,
-                      decoration: BoxDecoration(
-                        border: Border.all(color: Colors.grey.shade300),
-                      ),
-                      child: Stack(
-                        children: [
-                          // Background grid for time slots
-                          Column(
-                            children: List.generate(horizontalLinesCount, (slotIndex) {
-                              return Expanded(
-                                child: Container(
-                                  height: timeIntervalHeight,
-                                  decoration: BoxDecoration(
-                                    border: Border(
-                                      bottom: BorderSide(color: Colors.grey.shade200),
+                  // Row containing the time labels and calendar table
+                  Row(
+                    children: [
+                      // Time labels column
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 4.0),
+                        child: SizedBox(
+                          width: timeLabelSize,
+                          child: Stack(
+                            children: [
+                              //List Regular Time Frame
+                              Column(
+                                children: List.generate(horizontalLinesCount, (slotIndex) {
+                                  final DateTime baseDate = _currentViewVisibleDates[0];
+                                  final DateTime startDate = DateTime(
+                                      baseDate.year,
+                                      baseDate.month,
+                                      baseDate.day,
+                                      widget.timeSlotViewSettings.startHour.toInt());
+                                  final DateTime time = startDate.add(Duration(
+                                      minutes: slotIndex *
+                                          CalendarViewHelper.getTimeInterval(widget.timeSlotViewSettings)));
+                                  final String hourMinute = DateFormat('hh:mm').format(time);
+                                  final String amPm = DateFormat('a').format(time);
+                                  return Container(
+                                    height: timeIntervalHeight,
+                                    alignment: Alignment.topCenter,
+                                    child: Column(
+                                      children: [
+                                        Text(
+                                          hourMinute,
+                                          style: const TextStyle(fontSize: 12),
+                                        ),
+                                        Text(
+                                          amPm,
+                                          style: const TextStyle(fontSize: 12),
+                                        ),
+                                      ],
+                                    ),
+                                  );
+                                }),
+                              ),
+                              // Current time indicator text
+                              if (widget.showCurrentTimeIndicator &&
+                                  currentHour >= startHour &&
+                                  currentHour <= widget.timeSlotViewSettings.endHour)
+                                Positioned(
+                                  top: currentPosition - 8,
+                                  left: 0,
+                                  right: 0,
+                                  child: Text(
+                                    DateFormat('hh:mm').format(now),
+                                    textAlign: TextAlign.center,
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: widget.currentTimeIndicatorColor ?? Colors.blue,
+                                      fontWeight: FontWeight.bold,
                                     ),
                                   ),
                                 ),
-                              );
-                            }),
+                            ]
                           ),
-                          // Appointments
-                          ..._getTimelineAppointments(originalResourceIndex),
-                          // Current time indicator
-                          if (widget.showCurrentTimeIndicator &&
-                              currentHour >= startHour &&
-                              currentHour <= widget.timeSlotViewSettings.endHour)
-                            Positioned(
-                              top: currentPosition,
-                              left: 0,
-                              right: 0,
-                              child: Container(
-                                height: 2,
-                                color: Colors.red,
-                              ),
-                            ),
-                        ],
+                        ),
                       ),
-                    );
-                  }).toList(),
-                ],
+                      // Calendar table columns
+                      ...displayResources.asMap().entries.map((entry) {
+                        final int resourceIndex = entry.key;
+
+                        // Adjust the resource index for _getTimelineAppointments based on the original resources list
+                        final int originalResourceIndex = isRTL
+                            ? resources.length - 1 - resourceIndex
+                            : resourceIndex;
+
+                        return Container(
+                          width: columnWidths[resourceIndex],
+                          height: totalTimeSlotsHeight,
+                          decoration: BoxDecoration(
+                            border: Border.all(color: Colors.grey.shade200),
+                          ),
+                          child: Stack(
+                            children: [
+                              // Background grid for time slots
+                              Column(
+                                children: List.generate(horizontalLinesCount, (slotIndex) {
+                                  return Expanded(
+                                    child: Container(
+                                      height: timeIntervalHeight,
+                                      decoration: BoxDecoration(
+                                        border: Border(
+                                          bottom: BorderSide(color: Colors.grey.shade200),
+                                        ),
+                                      ),
+                                    ),
+                                  );
+                                }),
+                              ),
+                              // Appointments
+                              ..._getTimelineAppointments(originalResourceIndex),
+                              // Current time indicator
+                              if (widget.showCurrentTimeIndicator &&
+                                  currentHour >= startHour &&
+                                  currentHour <= widget.timeSlotViewSettings.endHour)
+                                Positioned(
+                                  top: currentPosition,
+                                  left: 0,
+                                  right: 0,
+                                  child: Container(
+                                    height: 2,
+                                    color: widget.currentTimeIndicatorColor ?? Colors.blue,
+                                  ),
+                                ),
+                            ],
+                          ),
+                        );
+                      }).toList(),
+                    ],
+                  ),
+                  // Circular point at the intersection (higher level)
+                  if (widget.showCurrentTimeIndicator &&
+                      currentHour >= startHour &&
+                      currentHour <= widget.timeSlotViewSettings.endHour)
+                    Positioned.directional(
+                      textDirection: isRTL ? TextDirection.rtl : TextDirection.ltr,
+                      top: currentPosition - 2, // Center the on the line
+                      start: timeLabelSize + 4, // Center the point on the intersection
+                      child: Container(
+                        width: 8,
+                        height: 8,
+                        decoration: BoxDecoration(
+                          color: widget.currentTimeIndicatorColor ?? Colors.blue,
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                    ),
+                ]
               ),
             ),
           ),
@@ -8958,8 +9006,7 @@ class _SfCalendarState extends State<SfCalendar>
     double pickerHeight = 0;
 
     final TextStyle datePickerStyle = _calendarTheme.activeDatesTextStyle!;
-    final Color? todayColor =
-        widget.todayHighlightColor ?? _calendarTheme.todayHighlightColor;
+    const Color todayColor = Color(0xFF204B97);
     final Color? todayTextColor = CalendarViewHelper.getTodayHighlightTextColor(
         todayColor, widget.todayTextStyle, _calendarTheme);
     double left = 0;
@@ -10363,7 +10410,8 @@ class _CalendarHeaderViewState extends State<_CalendarHeaderView> {
           hoverColor: rightArrowSplashColor,
           splashFactory: _CustomSplashFactory(),
           onTap: () {
-            if (!widget.enableInteraction) return;
+            if (!widget.enableInteraction)
+              return;
             widget.removePicker();
             final DateTime currentDate = widget.controller.displayDate!;
             widget.controller.displayDate =
