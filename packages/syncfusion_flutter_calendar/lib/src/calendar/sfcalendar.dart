@@ -162,6 +162,7 @@ class SfCalendar extends StatefulWidget {
   /// Use [DataSource] property to set the appointments to the scheduler.
   SfCalendar({
     Key? key,
+    this.isRtl = false,
     this.view = CalendarView.day,
     this.firstDayOfWeek = 7,
     this.headerHeight = 40,
@@ -233,6 +234,8 @@ class SfCalendar extends StatefulWidget {
         maxDate = maxDate ?? DateTime(9999, 12, 31),
         super(key: key);
 
+  ///pass directly to _addCombine widget
+  final bool isRtl;
   /// A builder that sets the widget to display on the calendar widget when
   /// the appointments are being loaded.
   ///
@@ -3039,6 +3042,9 @@ class _SfCalendarState extends State<SfCalendar>
   Widget build(BuildContext context) {
     double height;
     _isRTL = CalendarViewHelper.isRTLLayout(context);
+    if (kDebugMode) {
+      print('isRTL in build: $_isRTL');
+    }
     _themeData = Theme.of(context);
     _calendarTheme =
         _getThemeDataValue(SfCalendarTheme.of(context), _themeData);
@@ -8818,6 +8824,9 @@ class _SfCalendarState extends State<SfCalendar>
   //Render Layout sfCalendar widget
   Widget _addChildren(
       double agendaHeight, double height, double width, bool isRTL) {
+    if (kDebugMode) {
+      print('isRTL in build: $_isRTL');
+    }
     final bool isResourceEnabled =
     CalendarViewHelper.isResourceEnabled(widget.dataSource, _view);
     final double resourceViewSize =
@@ -8897,7 +8906,7 @@ class _SfCalendarState extends State<SfCalendar>
             width,
             timelineViewHeight,
             agendaHeight,
-            isRTL,
+            widget.isRtl,
           ),
         ),
       ),

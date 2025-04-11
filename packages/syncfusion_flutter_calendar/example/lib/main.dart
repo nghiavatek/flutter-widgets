@@ -7,16 +7,21 @@ void main() {
 
 /// The app which hosts the home page which contains the calendar on it.
 class CalendarApp extends StatelessWidget {
+
   const CalendarApp({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return const MaterialApp(title: 'Calendar Demo', home: MyHomePage());
+    return const MaterialApp(
+      title: 'Calendar Demo',
+      home: MyHomePage(),
+    );
   }
 }
 
 /// The hove page which hosts the calendar
 class MyHomePage extends StatefulWidget {
+
   /// Creates the home page to display teh calendar widget.
   const MyHomePage({Key? key}) : super(key: key);
 
@@ -26,6 +31,7 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
+
   final DateTime _selectedDate = DateTime.now();
 
   @override
@@ -34,6 +40,7 @@ class _MyHomePageState extends State<MyHomePage> {
     return Scaffold(
         body: SafeArea(
           child: SfCalendar(
+            isRtl: true,
             view: CalendarView.timelineDay,
             showDatePickerButton: true,
             timeSlotViewSettings: const TimeSlotViewSettings(
