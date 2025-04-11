@@ -8621,18 +8621,28 @@ class _SfCalendarState extends State<SfCalendar>
         ? _resourceCollection!
         : [CalendarResource(id: 'default')];
 
+    // Reverse the resources list for RTL mode to ensure correct order
+    final List<CalendarResource> displayResources =
+    isRTL ? resources.reversed.toList() : resources;
+
     // Calculate the position of the current time indicator
     final DateTime now = DateTime.now();
     final double startHour = widget.timeSlotViewSettings.startHour;
     final double currentHour = now.hour + now.minute / 60;
-    final double currentPosition = (currentHour - startHour) * 60 / widget.timeSlotViewSettings.timeInterval.inMinutes * timeIntervalHeight;
+    final double currentPosition = (currentHour - startHour) *
+        60 /
+        widget.timeSlotViewSettings.timeInterval.inMinutes *
+        timeIntervalHeight;
 
     // Calculate the height of the resource panel
     final double resourcePanelHeight = isResourceEnabled ? 60 : 0;
 
     // Calculate dynamic column widths for each resource
-    final List<double> columnWidths = resources.map((resource) {
-      return getColumnWidth(resource.id as String, resourceViewSize, widget.dataSource?.appointments?.cast<Appointment>() ?? []);
+    final List<double> columnWidths = displayResources.map((resource) {
+      return getColumnWidth(
+          resource.id as String,
+          resourceViewSize,
+          widget.dataSource?.appointments?.cast<Appointment>() ?? []);
     }).toList();
 
     return Column(
@@ -8643,18 +8653,22 @@ class _SfCalendarState extends State<SfCalendar>
           controller: _headerScrollController,
           child: Row(
             children: [
-              // "Time" label
+              // "Time" label (Localized for RTL)
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 4.0),
                 child: SizedBox(
                   width: timeLabelSize,
                   height: resourcePanelHeight,
-                  child: const Center(child: Text('Time')),
+                  child: Center(
+                    child: Text(
+                      isRTL ? 'الوقت' : 'Time', // Arabic for "Time" in RTL
+                    ),
+                  ),
                 ),
               ),
               // Service names
-              ...resources.asMap().entries.map((entry) {
-                final int resourceIndex = isRTL ? resources.length - 1 - entry.key : entry.key;
+              ...displayResources.asMap().entries.map((entry) {
+                final int resourceIndex = entry.key;
                 final double resourceItemHeight = CalendarViewHelper.getResourceItemHeight(
                     columnWidths[resourceIndex], height, widget.resourceViewSettings, resources.length);
 
@@ -8671,7 +8685,7 @@ class _SfCalendarState extends State<SfCalendar>
                     },
                     child: GestureDetector(
                       child: SingleResourceViewWidget(
-                        resource: resources[resourceIndex],
+                        resource: displayResources[resourceIndex],
                         resourceViewSettings: widget.resourceViewSettings,
                         height: resourceItemHeight,
                         cellBorderColor: widget.cellBorderColor,
@@ -8742,8 +8756,13 @@ class _SfCalendarState extends State<SfCalendar>
                     ),
                   ),
                   // Calendar table columns
-                  ...resources.asMap().entries.map((entry) {
-                    final int resourceIndex = isRTL ? resources.length - 1 - entry.key : entry.key;
+                  ...displayResources.asMap().entries.map((entry) {
+                    final int resourceIndex = entry.key;
+
+                    // Adjust the resource index for _getTimelineAppointments based on the original resources list
+                    final int originalResourceIndex = isRTL
+                        ? resources.length - 1 - resourceIndex
+                        : resourceIndex;
 
                     return Container(
                       width: columnWidths[resourceIndex],
@@ -8769,7 +8788,7 @@ class _SfCalendarState extends State<SfCalendar>
                             }),
                           ),
                           // Appointments
-                          ..._getTimelineAppointments(resourceIndex),
+                          ..._getTimelineAppointments(originalResourceIndex),
                           // Current time indicator
                           if (widget.showCurrentTimeIndicator &&
                               currentHour >= startHour &&
@@ -8795,6 +8814,7 @@ class _SfCalendarState extends State<SfCalendar>
       ],
     );
   }
+
   //Render Layout sfCalendar widget
   Widget _addChildren(
       double agendaHeight, double height, double width, bool isRTL) {
