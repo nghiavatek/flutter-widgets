@@ -8458,10 +8458,10 @@ class _SfCalendarState extends State<SfCalendar>
 
   double getColumnWidth(String resourceId, double minWidth, List<Appointment> allAppointments) {
     final int maxOverlap = getMaxOverlap(resourceId, allAppointments);
-    if (maxOverlap == 0 || maxOverlap == 1) {
+    if (maxOverlap >= 0 && maxOverlap <= 2) {
       return minWidth;
     } else {
-      return 50.0 * maxOverlap;
+      return 45.0 * maxOverlap;
     }
   }
 
@@ -8522,7 +8522,7 @@ class _SfCalendarState extends State<SfCalendar>
         Positioned(
           top: top,
           left: left,
-          width: 35,
+          width: 38,
           height: height,
           child: Container(
             margin: const EdgeInsets.symmetric(horizontal: 2, vertical: 2),
@@ -8532,15 +8532,38 @@ class _SfCalendarState extends State<SfCalendar>
             ),
             child: Column(
               children: [
-                Container(
-                  margin: const EdgeInsets.only(top: 4),
-                  child: CircleAvatar(
-                    radius: 12,
-                    backgroundColor: Colors.white,
-                    child: Icon(
-                      Icons.person,
-                      color: appointment.color,
-                      size: 16,
+                ColoredBox(
+                  color: Colors.transparent,
+                  child: Padding(
+                    padding: const EdgeInsets.only(top: 4.0),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(50), // Ensure circular clipping
+                      child: DecoratedBox(
+                        decoration: const BoxDecoration(
+                          border: GradientBoxBorder(
+                            gradient: LinearGradient(
+                              begin: Alignment.bottomLeft,
+                              end: Alignment.topRight,
+                              colors: [
+                                Color(0xFF3E92C4),
+                                Color.fromRGBO(255, 229, 173, 1.0),
+                              ],
+                            ),
+                            width: 2,
+                          ),
+                          shape: BoxShape.circle,
+                        ),
+                        child: Padding(
+                          padding: const EdgeInsets.all(1), // Consistent padding inside the border
+                          child: CircleAvatar(
+                            radius: 12,
+                            backgroundColor: Colors.white,
+                            backgroundImage: appointment.avatarUrl != null
+                                ? NetworkImage(appointment.avatarUrl!)
+                                : const AssetImage('assets/placeholder.png', package: 'syncfusion_flutter_calendar'),
+                          ),
+                        ),
+                      ),
                     ),
                   ),
                 ),
@@ -8550,6 +8573,8 @@ class _SfCalendarState extends State<SfCalendar>
                       quarterTurns: -1,
                       child: Text(
                         appointment.subject,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
                           color: Colors.white,
                           fontSize: 12,
@@ -8594,7 +8619,7 @@ class _SfCalendarState extends State<SfCalendar>
     // List of resources (default to a single resource if resources are not enabled)
     final List<CalendarResource> resources = isResourceEnabled
         ? _resourceCollection!
-        : [CalendarResource(id: 'default', displayName: '')];
+        : [CalendarResource(id: 'default')];
 
     // Calculate the position of the current time indicator
     final DateTime now = DateTime.now();
@@ -8672,7 +8697,6 @@ class _SfCalendarState extends State<SfCalendar>
         // Content (Blue Area): Time Frame List + Calendar Table (Horizontal and Vertical scrolling)
         Expanded(
           child: SingleChildScrollView(
-            scrollDirection: Axis.vertical,
             controller: _resourcePanelScrollController,
             child: SingleChildScrollView(
               scrollDirection: Axis.horizontal,
@@ -8737,7 +8761,7 @@ class _SfCalendarState extends State<SfCalendar>
                                   height: timeIntervalHeight,
                                   decoration: BoxDecoration(
                                     border: Border(
-                                      bottom: BorderSide(color: Colors.grey.shade200, width: 1.0),
+                                      bottom: BorderSide(color: Colors.grey.shade200),
                                     ),
                                   ),
                                 ),
@@ -11931,5 +11955,79 @@ class SingleResourceViewWidget extends StatelessWidget {
         ],
       ),
     );
+  }
+}
+
+
+class GradientBoxBorder extends BoxBorder {
+  const GradientBoxBorder({required this.gradient, this.width = 1.0});
+
+  final Gradient gradient;
+
+  final double width;
+
+  @override
+  BorderSide get bottom => BorderSide.none;
+
+  @override
+  BorderSide get top => BorderSide.none;
+
+  @override
+  EdgeInsetsGeometry get dimensions => EdgeInsets.all(width);
+
+  @override
+  bool get isUniform => true;
+
+  @override
+  void paint(
+      Canvas canvas,
+      Rect rect, {
+        TextDirection? textDirection,
+        BoxShape shape = BoxShape.rectangle,
+        BorderRadius? borderRadius,
+      }) {
+    switch (shape) {
+      case BoxShape.circle:
+        assert(
+        borderRadius == null,
+        'A borderRadius can only be given for rectangular boxes.',
+        );
+        _paintCircle(canvas, rect);
+        break;
+      case BoxShape.rectangle:
+        if (borderRadius != null) {
+          _paintRRect(canvas, rect, borderRadius);
+          return;
+        }
+        _paintRect(canvas, rect);
+        break;
+    }
+  }
+
+  void _paintRect(Canvas canvas, Rect rect) {
+    canvas.drawRect(rect.deflate(width / 2), _getPaint(rect));
+  }
+
+  void _paintRRect(Canvas canvas, Rect rect, BorderRadius borderRadius) {
+    final rrect = borderRadius.toRRect(rect).deflate(width / 2);
+    canvas.drawRRect(rrect, _getPaint(rect));
+  }
+
+  void _paintCircle(Canvas canvas, Rect rect) {
+    final paint = _getPaint(rect);
+    final radius = (rect.shortestSide - width) / 2.0;
+    canvas.drawCircle(rect.center, radius, paint);
+  }
+
+  @override
+  ShapeBorder scale(double t) {
+    return this;
+  }
+
+  Paint _getPaint(Rect rect) {
+    return Paint()
+      ..strokeWidth = width
+      ..shader = gradient.createShader(rect)
+      ..style = PaintingStyle.stroke;
   }
 }

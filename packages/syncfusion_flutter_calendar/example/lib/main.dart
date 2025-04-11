@@ -86,7 +86,7 @@ class _MyHomePageState extends State<MyHomePage> {
         startTime: DateTime(_selectedDate.year, _selectedDate.month, _selectedDate.day, 3, 20),
         endTime: DateTime(_selectedDate.year, _selectedDate.month, _selectedDate.day, 4, 30),
         subject: 'Mohammed',
-        color: Colors.green,
+        color: Colors.white,
         resourceIds: ['Service 2'],
       ),
     );

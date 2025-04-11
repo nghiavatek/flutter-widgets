@@ -75,6 +75,7 @@ class Appointment with Diagnosticable {
     this.endTimeZone,
     this.recurrenceRule,
     this.isAllDay = false,
+    this.avatarUrl,
     String? notes,
     this.location,
     this.resourceIds,
@@ -94,6 +95,7 @@ class Appointment with Diagnosticable {
     id = id ?? hashCode;
   }
 
+  String? avatarUrl;
   String? _notes;
 
   /// The start time for an [Appointment] in [SfCalendar].
