@@ -8629,7 +8629,7 @@ class _SfCalendarState extends State<SfCalendar>
 
     // Reverse the resources list for RTL mode to ensure correct order
     final List<CalendarResource> displayResources =
-    isRTL ? resources.reversed.toList() : resources;
+    isRTL ? resources : resources.reversed.toList();
 
     // Calculate the position of the current time indicator
     final DateTime now = DateTime.now();
