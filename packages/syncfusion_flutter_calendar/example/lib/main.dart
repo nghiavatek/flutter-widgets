@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:syncfusion_flutter_calendar/calendar.dart';
 
@@ -5,9 +6,7 @@ void main() {
   return runApp(const CalendarApp());
 }
 
-/// The app which hosts the home page which contains the calendar on it.
 class CalendarApp extends StatelessWidget {
-
   const CalendarApp({super.key});
 
   @override
@@ -19,112 +18,168 @@ class CalendarApp extends StatelessWidget {
   }
 }
 
-/// The hove page which hosts the calendar
 class MyHomePage extends StatefulWidget {
-
-  /// Creates the home page to display teh calendar widget.
   const MyHomePage({Key? key}) : super(key: key);
 
   @override
-  // ignore: library_private_types_in_public_api
   _MyHomePageState createState() => _MyHomePageState();
 }
 
 class _MyHomePageState extends State<MyHomePage> {
+  final CalendarController _calendarController = CalendarController();
+  DateTime _selectedDate = DateTime.now();
+  late _AppointmentDataSource _dataSource;
+  bool _isLoading = false;
 
-  final DateTime _selectedDate = DateTime.now();
+  @override
+  void initState() {
+    super.initState();
+    // Initialize the data source with appointments for the initial date
+    _dataSource = _getCalendarDataSource(_selectedDate);
+    // Listen for date changes
+    _calendarController.addPropertyChangedListener((property) {
+      if (property == 'displayDate') {
+        final DateTime newDate = _calendarController.displayDate!;
+        if (kDebugMode) {
+          print('CalendarController displayDate changed to: $newDate');
+        }
+        // Schedule the update after the build phase
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          _updateAppointments(newDate);
+        });
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _calendarController.dispose();
+    super.dispose();
+  }
+
+  // Method to update appointments when the date changes
+  void _updateAppointments(DateTime date) {
+    setState(() {
+      _isLoading = true;
+      _selectedDate = date;
+    });
+    // Generate mock appointments for the selected date
+    final List<Appointment> newAppointments = _generateMockAppointments(date);
+    if (kDebugMode) {
+      print('Generated mock appointments for date: $date');
+      print('Number of appointments: ${newAppointments.length}');
+    }
+    setState(() {
+      _dataSource = _AppointmentDataSource(newAppointments, _getResources());
+      _isLoading = false;
+    });
+  }
+
+  // Mock method to generate appointments for the selected date
+  List<Appointment> _generateMockAppointments(DateTime date) {
+    final List<Appointment> appointments = <Appointment>[];
+    // Generate different appointments based on the date
+    // For simplicity, we'll use the day of the month to vary the appointments
+    final int day = date.day;
+    final bool isEvenDay = day % 2 == 0;
+
+    if (isEvenDay) {
+      // Even days get a different set of appointments
+      appointments.add(
+        Appointment(
+          startTime: DateTime(date.year, date.month, date.day, 2, 15),
+          endTime: DateTime(date.year, date.month, date.day, 3, 1),
+          subject: 'Mohammed (Even Day)',
+          color: Colors.blue,
+          resourceIds: ['Service 1'],
+        ),
+      );
+      appointments.add(
+        Appointment(
+          startTime: DateTime(date.year, date.month, date.day, 3, 20),
+          endTime: DateTime(date.year, date.month, date.day, 4, 1),
+          subject: 'Mohammed (Even Day)',
+          color: Colors.green,
+          resourceIds: ['Service 2'],
+        ),
+      );
+    } else {
+      // Odd days get a different set of appointments
+      appointments.add(
+        Appointment(
+          startTime: DateTime(date.year, date.month, date.day, 1, 0),
+          endTime: DateTime(date.year, date.month, date.day, 2, 0),
+          subject: 'Mohammed (Odd Day)',
+          color: Colors.red,
+          resourceIds: ['Service 3'],
+        ),
+      );
+      appointments.add(
+        Appointment(
+          startTime: DateTime(date.year, date.month, date.day, 3, 20),
+          endTime: DateTime(date.year, date.month, date.day, 4, 30),
+          subject: 'Mohammed (Odd Day)',
+          color: Colors.pink,
+          resourceIds: ['Service 2'],
+        ),
+      );
+    }
+
+    return appointments;
+  }
 
   @override
   Widget build(BuildContext context) {
-
     return Scaffold(
-        body: SafeArea(
-          child: SfCalendar(
-            isRtl: true,
-            view: CalendarView.timelineDay,
-            showDatePickerButton: true,
-            timeSlotViewSettings: const TimeSlotViewSettings(
-              startHour: 1,
-              endHour: 23,
-              timeFormat: 'h:mm',
-              timeInterval: Duration(minutes: 30),
-              timeIntervalHeight: 60,
-            ),
-            minDate: _selectedDate.subtract(const Duration(days: 180)),
-            maxDate: _selectedDate.add(const Duration(days: 180)),
-            dataSource: _getCalendarDataSource(),
-            initialDisplayDate: _selectedDate,
-            resourceViewSettings: const ResourceViewSettings(
-              showAvatar: false,
-              size: 100,
-              displayNameTextStyle: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
+      body: SafeArea(
+        child: Stack(
+          children: [
+            SfCalendar(
+              changeTextTime: true,
+              showNavigationArrow: true,
+              controller: _calendarController,
+              headerStyle: const CalendarHeaderStyle(
+                textAlign: TextAlign.center,
+                textStyle: TextStyle(
+                  fontWeight: FontWeight.w700,
+                  fontSize: 16,
+                  color: Color(0xFF204B97),
+                ),
+              ),
+              view: CalendarView.timelineDay,
+              showDatePickerButton: true,
+              timeSlotViewSettings: const TimeSlotViewSettings(
+                startHour: 1,
+                endHour: 23,
+                timeFormat: 'h:mm',
+                timeInterval: Duration(minutes: 30),
+                timeIntervalHeight: 60,
+              ),
+              minDate: _selectedDate.subtract(const Duration(days: 180)),
+              maxDate: _selectedDate.add(const Duration(days: 180)),
+              dataSource: _dataSource,
+              initialDisplayDate: _selectedDate,
+              resourceViewSettings: const ResourceViewSettings(
+                showAvatar: false,
+                size: 100,
+                displayNameTextStyle: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                ),
               ),
             ),
-          ),
+            if (_isLoading)
+              const Center(
+                child: CircularProgressIndicator(),
+              ),
+          ],
         ),
+      ),
     );
   }
 
-
-  _AppointmentDataSource _getCalendarDataSource() {
-    final List<Appointment> appointments = <Appointment>[];
-    appointments.add(
-      Appointment(
-        startTime: DateTime(_selectedDate.year, _selectedDate.month, _selectedDate.day, 2, 15),
-        endTime: DateTime(_selectedDate.year, _selectedDate.month, _selectedDate.day, 3, 1),
-        subject: 'Mohammed',
-        color: Colors.blue,
-        resourceIds: ['Service 1'],
-      ),
-    );
-    appointments.add(
-      Appointment(
-        startTime: DateTime(_selectedDate.year, _selectedDate.month, _selectedDate.day, 3, 20),
-        endTime: DateTime(_selectedDate.year, _selectedDate.month, _selectedDate.day, 4, 1),
-        subject: 'Mohammed',
-        color: Colors.green,
-        resourceIds: ['Service 2'],
-      ),
-    );
-    appointments.add(
-      Appointment(
-        startTime: DateTime(_selectedDate.year, _selectedDate.month, _selectedDate.day, 3, 20),
-        endTime: DateTime(_selectedDate.year, _selectedDate.month, _selectedDate.day, 4, 30),
-        subject: 'Mohammed',
-        color: Colors.white,
-        resourceIds: ['Service 2'],
-      ),
-    );
-    appointments.add(
-      Appointment(
-        startTime: DateTime(_selectedDate.year, _selectedDate.month, _selectedDate.day, 3, 20),
-        endTime: DateTime(_selectedDate.year, _selectedDate.month, _selectedDate.day, 4, 30),
-        subject: 'Mohammed',
-        color: Colors.pink,
-        resourceIds: ['Service 2'],
-      ),
-    );
-    appointments.add(
-      Appointment(
-        startTime: DateTime(_selectedDate.year, _selectedDate.month, _selectedDate.day, 1, 0),
-        endTime: DateTime(_selectedDate.year, _selectedDate.month, _selectedDate.day, 2, 0),
-        subject: 'Mohammed',
-        color: Colors.red,
-        resourceIds: ['Service 3'],
-      ),
-    );
-    appointments.add(
-      Appointment(
-        startTime: DateTime(_selectedDate.year, _selectedDate.month, _selectedDate.day, 1, 0),
-        endTime: DateTime(_selectedDate.year, _selectedDate.month, _selectedDate.day, 2, 0),
-        subject: 'Mohammed',
-        color: Colors.yellow,
-        resourceIds: ['Service 6'],
-      ),
-    );
-
+  _AppointmentDataSource _getCalendarDataSource(DateTime date) {
+    final List<Appointment> appointments = _generateMockAppointments(date);
     final List<CalendarResource> resources = _getResources();
     return _AppointmentDataSource(appointments, resources);
   }
@@ -141,19 +196,14 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 }
 
-
 class _AppointmentDataSource extends CalendarDataSource {
   _AppointmentDataSource(List<Appointment> appointments, List<CalendarResource> resources) {
     this.appointments = appointments;
     this.resources = resources;
   }
 }
-/// An object to set the appointment collection data source to calendar, which
-/// used to map the custom appointment data to the calendar appointment, and
-/// allows to add, remove or reset the appointment collection.
+
 class MeetingDataSource extends CalendarDataSource {
-  /// Creates a meeting data source, which used to set the appointment
-  /// collection to the calendar
   MeetingDataSource(List<Meeting> source) {
     appointments = source;
   }
@@ -189,29 +239,16 @@ class MeetingDataSource extends CalendarDataSource {
     if (meeting is Meeting) {
       meetingData = meeting;
     }
-
     return meetingData;
   }
 }
 
-/// Custom business object class which contains properties to hold the detailed
-/// information about the event data which will be rendered in calendar.
 class Meeting {
-  /// Creates a meeting class with required details.
   Meeting(this.eventName, this.from, this.to, this.background, this.isAllDay);
 
-  /// Event name which is equivalent to subject property of [Appointment].
   String eventName;
-
-  /// From which is equivalent to start time property of [Appointment].
   DateTime from;
-
-  /// To which is equivalent to end time property of [Appointment].
   DateTime to;
-
-  /// Background which is equivalent to color property of [Appointment].
   Color background;
-
-  /// IsAllDay which is equivalent to isAllDay property of [Appointment].
   bool isAllDay;
 }
