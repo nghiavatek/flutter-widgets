@@ -10305,86 +10305,90 @@ class _CalendarHeaderViewState extends State<_CalendarHeaderView> {
         prevArrowColor != arrowColor || !widget.enableInteraction
             ? Colors.transparent
             : null;
-    final Container leftArrow = navigationArrowEnabled
+    final Widget leftArrow = navigationArrowEnabled
         ? Container(
-            alignment: Alignment.center,
-            color: headerBackgroundColor,
-            width: arrowWidth,
-            height: headerHeight,
-            padding: const EdgeInsets.all(2),
-            child: Material(
-                color: headerBackgroundColor,
-                child: InkWell(
-                  //// set splash color as transparent when arrow reaches min date(disabled)
-                  splashColor: leftArrowSplashColor,
-                  highlightColor: leftArrowSplashColor,
-                  hoverColor: leftArrowSplashColor,
-                  splashFactory: _CustomSplashFactory(),
-                  onTap: _backward,
-                  child: Semantics(
-                    label: 'Backward',
-                    child: Container(
-                        width: arrowWidth,
-                        height: headerHeight,
-                        alignment: Alignment.center,
-                        clipBehavior: Clip.antiAlias,
-                        decoration:
-                            const BoxDecoration(color: Colors.transparent),
-                        child: Icon(
-                          widget.navigationDirection ==
-                                  MonthNavigationDirection.horizontal
-                              ? Icons.chevron_left
-                              : Icons.keyboard_arrow_up,
-                          color: prevArrowColor,
-                          size: arrowSize,
-                        )),
-                  ),
-                )),
-          )
-        : Container();
+      alignment: Alignment.center,
+      color: headerBackgroundColor,
+      width: arrowWidth,
+      height: headerHeight,
+      padding: const EdgeInsets.all(2),
+      child: Material(
+        color: headerBackgroundColor,
+        child: InkWell(
+          splashColor: leftArrowSplashColor,
+          highlightColor: leftArrowSplashColor,
+          hoverColor: leftArrowSplashColor,
+          splashFactory: _CustomSplashFactory(),
+          onTap: () {
+            if (!widget.enableInteraction)
+              return;
+            widget.removePicker();
+            final DateTime currentDate = widget.controller.displayDate!;
+            widget.controller.displayDate =
+                currentDate.subtract(const Duration(days: 1));
+          },
+          child: Semantics(
+            label: 'Previous Day',
+            child: Container(
+              width: arrowWidth,
+              height: headerHeight,
+              alignment: Alignment.center,
+              clipBehavior: Clip.antiAlias,
+              decoration: const BoxDecoration(color: Colors.transparent),
+              child: Icon(
+                Icons.chevron_left,
+                color: prevArrowColor,
+                size: 25,
+              ),
+            ),
+          ),
+        ),
+      ),
+    ) : Container();
 
     final Color? rightArrowSplashColor =
         nextArrowColor != arrowColor || !widget.enableInteraction
             ? Colors.transparent
             : null;
-    final Container rightArrow = navigationArrowEnabled
+    final Widget rightArrow = navigationArrowEnabled
         ? Container(
-            alignment: Alignment.center,
-            color: headerBackgroundColor,
-            width: arrowWidth,
-            height: headerHeight,
-            padding: const EdgeInsets.all(2),
-            child: Material(
-                color: headerBackgroundColor,
-                child: InkWell(
-                  //// set splash color as transparent when arrow reaches max date(disabled)
-                  splashColor: rightArrowSplashColor,
-                  highlightColor: rightArrowSplashColor,
-                  hoverColor: rightArrowSplashColor,
-                  splashFactory: _CustomSplashFactory(),
-                  onTap: _forward,
-                  child: Semantics(
-                    label: 'Forward',
-                    child: Container(
-                        width: arrowWidth,
-                        height: headerHeight,
-                        alignment: Alignment.center,
-                        clipBehavior: Clip.antiAlias,
-                        decoration: const BoxDecoration(
-                          color: Colors.transparent,
-                        ),
-                        child: Icon(
-                          widget.navigationDirection ==
-                                  MonthNavigationDirection.horizontal
-                              ? Icons.chevron_right
-                              : Icons.keyboard_arrow_down,
-                          color: nextArrowColor,
-                          size: arrowSize,
-                        )),
-                  ),
-                )),
-          )
-        : Container();
+      alignment: Alignment.center,
+      color: headerBackgroundColor,
+      width: arrowWidth,
+      height: headerHeight,
+      padding: const EdgeInsets.all(2),
+      child: Material(
+        color: headerBackgroundColor,
+        child: InkWell(
+          splashColor: rightArrowSplashColor,
+          highlightColor: rightArrowSplashColor,
+          hoverColor: rightArrowSplashColor,
+          splashFactory: _CustomSplashFactory(),
+          onTap: () {
+            if (!widget.enableInteraction) return;
+            widget.removePicker();
+            final DateTime currentDate = widget.controller.displayDate!;
+            widget.controller.displayDate =
+                currentDate.add(const Duration(days: 1));
+          },
+          child: Semantics(
+            label: 'Next Day',
+            child: Container(
+              width: arrowWidth,
+              height: headerHeight,
+              alignment: Alignment.center,
+              clipBehavior: Clip.antiAlias,
+              decoration: const BoxDecoration(color: Colors.transparent),
+              child: Icon(
+                Icons.chevron_right,
+                color: nextArrowColor,
+                size: 25,
+              ),
+            ),
+          ),
+        ),
+      ),
+    ) : Container();
 
     final Color? todaySplashColor =
         !widget.enableInteraction ? Colors.transparent : null;
@@ -10818,30 +10822,32 @@ class _CalendarHeaderViewState extends State<_CalendarHeaderView> {
       case CalendarView.timelineWorkWeek:
         {
           final DateTime startDate = widget.visibleDates[0];
-          final DateTime endDate =
-              widget.visibleDates[widget.visibleDates.length - 1];
-          if (visibleDatesCount == 1) {
-            if (headerDateFormat != null) {
-              // ignore: lines_longer_than_80_chars
-              CalendarViewHelper.getLocalizedString(
-                  startDate, headerFormatString, widget.locale);
-            }
-            // ignore: lines_longer_than_80_chars
-            return '${DateFormat(monthFormat, widget.locale).format(startDate)} ${startDate.year}';
+          if (headerDateFormat != null) {
+            // Use the custom header format if provided
+            return CalendarViewHelper.getLocalizedString(
+                startDate, headerFormatString, widget.locale);
           } else {
-            if (headerDateFormat != null) {
-              // ignore: lines_longer_than_80_chars
-              return '${CalendarViewHelper.getLocalizedString(startDate, headerFormatString, widget.locale)} - ${CalendarViewHelper.getLocalizedString(endDate, headerFormatString, widget.locale)}';
+            // Calculate if the date is today, tomorrow, yesterday, or another day
+            final DateTime now = DateTime.now();
+            final DateTime today = DateTime(now.year, now.month, now.day);
+            final DateTime headerDate = DateTime(startDate.year, startDate.month, startDate.day);
+            final int difference = headerDate.difference(today).inDays;
+
+            // Determine the day text
+            String dayText;
+            if (difference == 0) {
+              dayText = 'Today'; // Should be localized
+            } else if (difference == 1) {
+              dayText = 'Tomorrow'; // Should be localized
+            } else {
+              dayText = DateFormat('EEEE', widget.locale).format(headerDate); // e.g., "Monday"
             }
 
-            monthFormat = 'MMM';
-            String startText =
-                DateFormat(monthFormat, widget.locale).format(startDate);
-            startText = '${startDate.day} $startText - ';
-            final String endText =
-                // ignore: lines_longer_than_80_chars
-                '${endDate.day} ${DateFormat(monthFormat, widget.locale).format(endDate)} ${endDate.year}';
-            return startText + endText;
+            // Format the date (e.g., "15 Oct 2023")
+            final String formattedDate = DateFormat('d MMM yyyy', widget.locale).format(headerDate);
+
+            // Combine day text and date (e.g., "Today, 15 Oct 2023")
+            return '$dayText, $formattedDate';
           }
         }
     }
