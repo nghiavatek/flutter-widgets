@@ -163,6 +163,7 @@ class SfCalendar extends StatefulWidget {
   SfCalendar({
     Key? key,
     this.isRtl = false,
+    this.changeTextTime = false,
     this.view = CalendarView.day,
     this.firstDayOfWeek = 7,
     this.headerHeight = 40,
@@ -236,6 +237,7 @@ class SfCalendar extends StatefulWidget {
 
   ///pass directly to _addCombine widget
   final bool? isRtl;
+  final bool changeTextTime;
   /// A builder that sets the widget to display on the calendar widget when
   /// the appointments are being loaded.
   ///
@@ -8664,7 +8666,7 @@ class _SfCalendarState extends State<SfCalendar>
                   height: resourcePanelHeight,
                   child: Center(
                     child: Text(
-                      isRTL ? 'الوقت' : 'Time', // Arabic for "Time" in RTL
+                      widget.changeTextTime ? 'الوقت' : 'Time', // Arabic for "Time" in RTL
                     ),
                   ),
                 ),
