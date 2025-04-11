@@ -2648,7 +2648,6 @@ class _SfCalendarState extends State<SfCalendar>
 
   /// Notifier to repaint the resource view if the image doesn't loaded on
   /// initial load.
-  late ValueNotifier<bool> _resourceImageNotifier;
 
   /// Used to assign the forward list as center of scroll view.
   final Key _scheduleViewKey = UniqueKey();
@@ -2775,7 +2774,6 @@ class _SfCalendarState extends State<SfCalendar>
     _loadDataBase().then((bool value) => _getAppointment());
     _agendaDateNotifier = ValueNotifier<ScheduleViewHoveringDetails?>(null);
     _agendaViewNotifier = ValueNotifier<ScheduleViewHoveringDetails?>(null);
-    _resourceImageNotifier = ValueNotifier<bool>(false);
     _headerHoverNotifier = ValueNotifier<Offset?>(null)
       ..addListener(_updateViewHeaderHover);
     _resourceHoverNotifier = ValueNotifier<Offset?>(null)
@@ -10836,9 +10834,9 @@ class _CalendarHeaderViewState extends State<_CalendarHeaderView> {
             // Determine the day text
             String dayText;
             if (difference == 0) {
-              dayText = 'Today'; // Should be localized
+              dayText = widget.locale.startsWith('ar') ? 'اليوم' : 'Today';
             } else if (difference == 1) {
-              dayText = 'Tomorrow'; // Should be localized
+              dayText = widget.locale.startsWith('ar') ? 'غداً' : 'Tomorrow';
             } else {
               dayText = DateFormat('EEEE', widget.locale).format(headerDate); // e.g., "Monday"
             }
