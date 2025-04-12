@@ -135,14 +135,14 @@ class _MyHomePageState extends State<MyHomePage> {
         child: Stack(
           children: [
             SfCalendar(
-              changeTextTime: true,
+              currentTimeIndicatorColor: const Color(0xFF67B4AD),
               showNavigationArrow: true,
               controller: _calendarController,
               headerStyle: const CalendarHeaderStyle(
                 textAlign: TextAlign.center,
                 textStyle: TextStyle(
                   fontWeight: FontWeight.w700,
-                  fontSize: 16,
+                  fontSize: 15,
                   color: Color(0xFF204B97),
                 ),
               ),
@@ -153,7 +153,7 @@ class _MyHomePageState extends State<MyHomePage> {
                 endHour: 23,
                 timeFormat: 'h:mm',
                 timeInterval: Duration(minutes: 30),
-                timeIntervalHeight: 60,
+                timeIntervalHeight: 80,
               ),
               minDate: _selectedDate.subtract(const Duration(days: 180)),
               maxDate: _selectedDate.add(const Duration(days: 180)),
@@ -163,8 +163,8 @@ class _MyHomePageState extends State<MyHomePage> {
                 showAvatar: false,
                 size: 100,
                 displayNameTextStyle: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
             ),
