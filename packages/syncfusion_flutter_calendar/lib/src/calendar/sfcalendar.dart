@@ -8855,7 +8855,7 @@ class _SfCalendarState extends State<SfCalendar>
                       currentHour >= startHour &&
                       currentHour <= widget.timeSlotViewSettings.endHour)
                     Positioned.directional(
-                      textDirection: isRTL ? TextDirection.rtl : TextDirection.ltr,
+                      textDirection: widget.changeTextTime ? TextDirection.rtl : TextDirection.ltr,
                       top: currentPosition - 2, // Center the on the line
                       start: timeLabelSize + 4, // Center the point on the intersection
                       child: Container(
