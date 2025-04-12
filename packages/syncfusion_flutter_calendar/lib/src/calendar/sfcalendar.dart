@@ -8749,16 +8749,26 @@ class _SfCalendarState extends State<SfCalendar>
                                   final String amPm = DateFormat('a').format(time);
                                   return Container(
                                     height: timeIntervalHeight,
-                                    alignment: Alignment.topCenter,
-                                    child: Column(
+                                    alignment: Alignment.center,
+                                    child: Stack(
                                       children: [
-                                        Text(
-                                          hourMinute,
-                                          style: const TextStyle(fontSize: 12),
+                                        Positioned.directional(
+                                          textDirection: Directionality.of(context),
+                                          top: -4,
+                                          end: 2,
+                                          child: Text(
+                                            hourMinute,
+                                            style: const TextStyle(fontSize: 12),
+                                          ),
                                         ),
-                                        Text(
-                                          amPm,
-                                          style: const TextStyle(fontSize: 12),
+                                        Positioned.directional(
+                                          textDirection: Directionality.of(context),
+                                          top: 10,
+                                          end: 4,
+                                          child: Text(
+                                            amPm,
+                                            style: const TextStyle(fontSize: 12),
+                                          ),
                                         ),
                                       ],
                                     ),
