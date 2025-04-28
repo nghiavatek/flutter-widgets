@@ -12031,15 +12031,17 @@ class SingleResourceViewWidget extends StatelessWidget {
     return Container(
       height: height,
       alignment: Alignment.center,
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Text(
-            resource.displayName,
-            style: resourceViewSettings.displayNameTextStyle,
-            textAlign: TextAlign.center,
-          ),
-        ],
+      child: SingleChildScrollView(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              resource.displayName,
+              style: resourceViewSettings.displayNameTextStyle,
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
       ),
     );
   }
