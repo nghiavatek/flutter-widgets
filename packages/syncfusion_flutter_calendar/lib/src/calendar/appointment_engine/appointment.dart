@@ -77,6 +77,9 @@ class Appointment with Diagnosticable {
     this.isAllDay = false,
     this.avatarUrl,
     String? notes,
+    this.resourceName,
+    this.typeAppointment,
+    this.idSubject,
     this.location,
     this.resourceIds,
     this.recurrenceId,
@@ -97,6 +100,10 @@ class Appointment with Diagnosticable {
 
   String? avatarUrl;
   String? _notes;
+  final String? resourceName;
+  final String? typeAppointment;
+  final int? idSubject;
+
 
   /// The start time for an [Appointment] in [SfCalendar].
   ///
