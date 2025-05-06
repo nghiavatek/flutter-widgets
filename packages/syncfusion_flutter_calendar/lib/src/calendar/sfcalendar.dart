@@ -165,6 +165,9 @@ class SfCalendar extends StatefulWidget {
     this.currentTimeIndicatorColor,
     this.isRtl = false,
     this.changeTextTime = false,
+    this.resourceName,
+    this.typeAppointment,
+    this.idSubject,
     this.view = CalendarView.day,
     this.firstDayOfWeek = 7,
     this.headerHeight = 40,
@@ -240,6 +243,9 @@ class SfCalendar extends StatefulWidget {
   final bool? isRtl;
   final bool changeTextTime;
   final Color? currentTimeIndicatorColor;
+  final String? resourceName;
+  final String? typeAppointment;
+  final int? idSubject;
   /// A builder that sets the widget to display on the calendar widget when
   /// the appointments are being loaded.
   ///
