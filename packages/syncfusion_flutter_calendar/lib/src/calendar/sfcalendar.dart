@@ -8529,68 +8529,90 @@ class _SfCalendarState extends State<SfCalendar>
           left: left,
           width: 38,
           height: height,
-          child: Container(
-            margin: const EdgeInsets.symmetric(horizontal: 2, vertical: 2),
-            decoration: BoxDecoration(
-              color: appointment.color,
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Column(
-              children: [
-                ColoredBox(
-                  color: Colors.transparent,
-                  child: Padding(
-                    padding: const EdgeInsets.only(top: 4.0),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(50), // Ensure circular clipping
-                      child: DecoratedBox(
-                        decoration: const BoxDecoration(
-                          border: GradientBoxBorder(
-                            gradient: LinearGradient(
-                              begin: Alignment.bottomLeft,
-                              end: Alignment.topRight,
-                              colors: [
-                                Color(0xFF3E92C4),
-                                Color.fromRGBO(255, 229, 173, 1.0),
-                              ],
+          child: GestureDetector(
+            onTap: () {
+              // Create CalendarTapDetails for onTap callback
+              final CalendarTapDetails details = CalendarTapDetails(
+               [appointment],
+                appointment.startTime,
+                CalendarElement.appointment,
+                isResourceEnabled ? _resourceCollection![resourceIndex] : null,
+              );
+              widget.onTap?.call(details);
+            },
+            onLongPress: () {
+              // Create CalendarLongPressDetails for onLongPress callback
+              final CalendarLongPressDetails details = CalendarLongPressDetails(
+                [appointment],
+                appointment.startTime,
+                CalendarElement.appointment,
+                isResourceEnabled ? _resourceCollection![resourceIndex] : null,
+              );
+              widget.onLongPress?.call(details);
+            },
+            child: Container(
+              margin: const EdgeInsets.symmetric(horizontal: 2, vertical: 2),
+              decoration: BoxDecoration(
+                color: appointment.color,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Column(
+                children: [
+                  ColoredBox(
+                    color: Colors.transparent,
+                    child: Padding(
+                      padding: const EdgeInsets.only(top: 4.0),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(50), // Ensure circular clipping
+                        child: DecoratedBox(
+                          decoration: const BoxDecoration(
+                            border: GradientBoxBorder(
+                              gradient: LinearGradient(
+                                begin: Alignment.bottomLeft,
+                                end: Alignment.topRight,
+                                colors: [
+                                  Color(0xFF3E92C4),
+                                  Color.fromRGBO(255, 229, 173, 1.0),
+                                ],
+                              ),
+                              width: 2,
                             ),
-                            width: 2,
+                            shape: BoxShape.circle,
                           ),
-                          shape: BoxShape.circle,
-                        ),
-                        child: Padding(
-                          padding: const EdgeInsets.all(1), // Consistent padding inside the border
-                          child: CircleAvatar(
-                            radius: 14,
-                            backgroundColor: Colors.white,
-                            backgroundImage: appointment.avatarUrl != null
-                                ? NetworkImage(appointment.avatarUrl!)
-                                : const AssetImage('assets/placeholder.png', package: 'syncfusion_flutter_calendar'),
+                          child: Padding(
+                            padding: const EdgeInsets.all(1), // Consistent padding inside the border
+                            child: CircleAvatar(
+                              radius: 14,
+                              backgroundColor: Colors.white,
+                              backgroundImage: appointment.avatarUrl != null
+                                  ? NetworkImage(appointment.avatarUrl!)
+                                  : const AssetImage('assets/placeholder.png', package: 'syncfusion_flutter_calendar'),
+                            ),
                           ),
                         ),
                       ),
                     ),
                   ),
-                ),
-                Expanded(
-                  child: Center(
-                    child: RotatedBox(
-                      quarterTurns: -1,
-                      child: Text(
-                        appointment.subject,
-                        textAlign: TextAlign.center,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 12,
-                          fontWeight: FontWeight.bold,
+                  Expanded(
+                    child: Center(
+                      child: RotatedBox(
+                        quarterTurns: -1,
+                        child: Text(
+                          appointment.subject,
+                          textAlign: TextAlign.center,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                       ),
                     ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),
